@@ -17,6 +17,9 @@ import {
   touchAppSession,
 } from "./session/AppSession";
 import { ILoggingService } from "./service/LoggingService";
+import { CreateInMemoryEventEditingRepository } from "./features/EventEditing/EventEditingRepository";
+import { CreateEventEditingService } from "./features/EventEditing/EventEditingService";
+import { CreateEventEditingController } from "./features/EventEditing/EventEditingController";
 
 type AsyncRequestHandler = RequestHandler;
 
@@ -252,6 +255,31 @@ class ExpressApp implements IApp {
         res.render("home", { session: browserSession, pageError: null });
       }),
     );
+    // ── Event Editing routes ─────────────────────────────────────────────
+
+const eventEditingRepo = CreateInMemoryEventEditingRepository();
+const eventEditingService = CreateEventEditingService(eventEditingRepo);
+const eventEditingController = CreateEventEditingController(eventEditingService);
+
+this.app.get(
+  "/events/:eventId/edit",
+  asyncHandler(async (req, res) => {
+    if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers and admins can edit events.")) {
+      return;
+    }
+    await eventEditingController.showEditForm(req, res);
+  }),
+);
+
+this.app.post(
+  "/events/:eventId/edit",
+  asyncHandler(async (req, res) => {
+    if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers and admins can edit events.")) {
+      return;
+    }
+    await eventEditingController.submitEditForm(req, res);
+  }),
+);
 
     // ── Error handler ────────────────────────────────────────────────
 
