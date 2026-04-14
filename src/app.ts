@@ -3,6 +3,7 @@ import express, { Request, RequestHandler, Response } from "express";
 import session from "express-session";
 import Layouts from "express-ejs-layouts";
 import { IAuthController } from "./auth/AuthController";
+import type { IEventListController } from "./features/EventList/EventListController";
 import {
   AuthenticationRequired,
   AuthorizationRequired,
@@ -38,6 +39,7 @@ class ExpressApp implements IApp {
 
   constructor(
     private readonly authController: IAuthController,
+    private readonly eventListController: IEventListController,
     private readonly logger: ILoggingService,
   ) {
     this.app = express();
@@ -255,6 +257,16 @@ class ExpressApp implements IApp {
         res.render("home", { session: browserSession, pageError: null });
       }),
     );
+    // ── Event List route ─────────────────────────────────────────────────
+
+    this.app.get(
+      "/events",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        await this.eventListController.showEventList(req, res);
+      }),
+    );
+
     // ── Event Editing routes ─────────────────────────────────────────────
 
 const eventEditingRepo = CreateInMemoryEventEditingRepository();
@@ -300,7 +312,8 @@ this.app.post(
 
 export function CreateApp(
   authController: IAuthController,
+  eventListController: IEventListController,
   logger: ILoggingService,
 ): IApp {
-  return new ExpressApp(authController, logger);
+  return new ExpressApp(authController, eventListController, logger);
 }
