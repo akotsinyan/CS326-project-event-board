@@ -1,4 +1,3 @@
-import { title } from "node:process";
 import { Err, Ok, Result } from "../../../lib/result";
 import { createEvent, IEvent } from "../model/event";
 import { EventError, ValidationError } from "./error";
@@ -10,7 +9,7 @@ class InMemoryEventRepository implements IEventRepository {
   async add(data: CreateEventInput): Promise<Result<IEvent, EventError>> {
     const id = crypto.randomUUID();
     if (
-      !title ||
+      !data.title ||
       !data.description ||
       !data.location ||
       !data.startDatetime ||
