@@ -5,6 +5,7 @@ import { ILoggingService } from "../../../service/LoggingService";
 import { EventError } from "../repository/error";
 
 export interface IEventController {
+  renderCreateEventPage(res: Response, pageError?: string): void;
   create(
     res: Response,
     session: IAppBrowserSession,
@@ -51,6 +52,10 @@ class EventController implements IEventController {
       message: "Unable to create event: An unexpected error occurred.",
       layout: false,
     });
+  }
+
+  renderCreateEventPage(res: Response, pageError?: string): void {
+    res.render("/events/new", { pageError });
   }
 
   async create(
