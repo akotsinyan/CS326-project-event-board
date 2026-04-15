@@ -1,10 +1,6 @@
 import { Ok, Err, type Result } from "../../lib/result";
 import type { IEvent } from "../CreateEvent/model/event";
-import type {
-  IEventListRepository,
-  EventListFilter,
-  Timeframe,
-} from "./EventListRepository";
+import type { IEventListRepository, EventListFilter, Timeframe, EventListRepoError } from "./EventListRepository";
 
 // ── Error types ───────────────────────────────────────────────────────────────
 
@@ -15,9 +11,7 @@ export type EventListError =
 // ── Service interface ─────────────────────────────────────────────────────────
 
 export interface IEventListService {
-  getFilteredEvents(
-    filter: EventListFilter
-  ): Promise<Result<IEvent[], EventListError>>;
+  getFilteredEvents(filter: EventListFilter): Promise<Result<IEvent[], EventListError>>;
 }
 
 // ── Timeframe helpers ─────────────────────────────────────────────────────────
@@ -31,6 +25,7 @@ function startOfDay(d: Date): Date {
 }
 
 function getWeekBounds(now: Date): { weekStart: Date; weekEnd: Date } {
+  const day = now.getDay();
   const day = now.getDay(); // 0 = Sunday
   const mondayOffset = day === 0 ? -6 : 1 - day;
   const weekStart = startOfDay(now);
@@ -46,27 +41,19 @@ function getWeekendBounds(now: Date): { saturdayStart: Date; sundayEnd: Date } {
   const saturdayStart = startOfDay(now);
   saturdayStart.setDate(saturdayStart.getDate() + daysUntilSaturday);
   const sundayEnd = new Date(saturdayStart);
-  sundayEnd.setDate(sundayEnd.getDate() + 2); // exclusive upper bound (Monday 00:00)
+  sundayEnd.setDate(sundayEnd.getDate() + 2);
   return { saturdayStart, sundayEnd };
 }
 
 function applyTimeframe(events: IEvent[], timeframe: Timeframe, now: Date): IEvent[] {
   const upcoming = events.filter((e) => e.startDatetime >= now);
-
   if (timeframe === "all") return upcoming;
-
   if (timeframe === "this-week") {
     const { weekStart, weekEnd } = getWeekBounds(now);
-    return upcoming.filter(
-      (e) => e.startDatetime >= weekStart && e.startDatetime < weekEnd
-    );
+    return upcoming.filter((e) => e.startDatetime >= weekStart && e.startDatetime < weekEnd);
   }
-
-  // this-weekend
   const { saturdayStart, sundayEnd } = getWeekendBounds(now);
-  return upcoming.filter(
-    (e) => e.startDatetime >= saturdayStart && e.startDatetime < sundayEnd
-  );
+  return upcoming.filter((e) => e.startDatetime >= saturdayStart && e.startDatetime < sundayEnd);
 }
 
 // ── Implementation ────────────────────────────────────────────────────────────
@@ -74,9 +61,7 @@ function applyTimeframe(events: IEvent[], timeframe: Timeframe, now: Date): IEve
 class EventListService implements IEventListService {
   constructor(private readonly repo: IEventListRepository) {}
 
-  async getFilteredEvents(
-    filter: EventListFilter
-  ): Promise<Result<IEvent[], EventListError>> {
+  async getFilteredEvents(filter: EventListFilter): Promise<Result<IEvent[], EventListError>> {
     const timeframe: Timeframe = filter.timeframe ?? "all";
 
     if (filter.timeframe !== undefined && !VALID_TIMEFRAMES.includes(filter.timeframe)) {
@@ -85,7 +70,7 @@ class EventListService implements IEventListService {
 
     const repoResult = await this.repo.findPublished();
     if (!repoResult.ok) {
-      const { message } = repoResult.value;
+      const { message } = repoResult.value as EventListRepoError;
       return Err({ type: "UnexpectedError" as const, message });
     }
 
@@ -105,8 +90,6 @@ class EventListService implements IEventListService {
 
 // ── Factory function ──────────────────────────────────────────────────────────
 
-export function CreateEventListService(
-  repo: IEventListRepository
-): IEventListService {
+export function CreateEventListService(repo: IEventListRepository): IEventListService {
   return new EventListService(repo);
 }

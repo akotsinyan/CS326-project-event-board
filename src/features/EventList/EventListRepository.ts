@@ -1,6 +1,5 @@
 import { Ok, Err, type Result } from "../../lib/result";
-import { type IEvent } from "../CreateEvent/model/event";
-import { createEvent } from "../CreateEvent/model/event";
+import { type IEvent, createEvent } from "../CreateEvent/model/event";
 
 // ── Filter types ──────────────────────────────────────────────────────────────
 
@@ -65,7 +64,7 @@ function makeEvent(
 }
 
 const saturday = nextWeekday(6);
-const sunday = nextWeekday(0 === now.getDay() ? 7 : 0);
+const sunday = nextWeekday(now.getDay() === 0 ? 7 : 0);
 
 const SEED_EVENTS: IEvent[] = [
   makeEvent("evt-list-1", "Spring Hackathon", "tech", daysFromNow(2), 8, "user-staff"),
@@ -83,8 +82,7 @@ class InMemoryEventListRepository implements IEventListRepository {
 
   async findPublished(): Promise<Result<IEvent[], EventListRepoError>> {
     try {
-      const published = this.events.filter((e) => e.status === "published");
-      return Ok(published);
+      return Ok(this.events.filter((e) => e.status === "published"));
     } catch {
       return Err({ type: "UnexpectedError" as const, message: "Failed to fetch events." });
     }
