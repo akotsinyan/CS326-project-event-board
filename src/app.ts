@@ -23,6 +23,9 @@ import { CreateEventEditingController } from "./features/EventEditing/EventEditi
 import { CreateInMemoryRsvpToggleRepository } from "./features/RsvpToggle/RsvpToggleRepository";
 import { CreateRsvpToggleService } from "./features/RsvpToggle/RsvpToggleService";
 import { CreateRsvpToggleController } from "./features/RsvpToggle/RsvpToggleController";
+import { createInMemoryEventRepository } from "./features/CreateEvent/repository/InMemoryEventRepository";
+import { createEventService } from "./features/CreateEvent/service/EventService";
+import { createEventController } from "./features/CreateEvent/controller/EventController";
 
 type AsyncRequestHandler = RequestHandler;
 
@@ -306,6 +309,51 @@ this.app.get(
       return;
     }
     await rsvpToggleController.getRsvpStatus(req, res);
+  }),
+);
+
+// Event Creation Routes
+const eventRepository = createInMemoryEventRepository();
+const eventService = createEventService(eventRepository);
+const eventController = createEventController(eventService, this.logger);
+
+this.app.get(
+  "/events/new",
+  asyncHandler(async (req, res) => {
+    if (!this.requireAuthenticated(req, res)) {
+      return;
+    }
+    if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers and admins can create events.")) {
+      return;
+    }
+    eventController.renderCreateEventPage(res);
+  }),
+);
+
+this.app.post(
+  "/events/new",
+  asyncHandler(async (req, res) => {
+    if (!this.requireAuthenticated(req, res)) {
+      return;
+    }
+
+    if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers and admins can create events.")) {
+      return;
+    }
+
+    const { title, description, location, startDatetime, endDatetime, category, capacity } = req.body;
+
+    await eventController.create(
+      res,
+      touchAppSession(sessionStore(req)),
+      title,
+      description,
+      location,
+      new Date(startDatetime),
+      new Date(endDatetime),
+      category,
+      capacity ? parseInt(capacity) : undefined,
+    ); 
   }),
 );
 
