@@ -20,6 +20,9 @@ import { ILoggingService } from "./service/LoggingService";
 import { CreateInMemoryEventEditingRepository } from "./features/EventEditing/EventEditingRepository";
 import { CreateEventEditingService } from "./features/EventEditing/EventEditingService";
 import { CreateEventEditingController } from "./features/EventEditing/EventEditingController";
+import { CreateInMemoryRsvpToggleRepository } from "./features/RsvpToggle/RsvpToggleRepository";
+import { CreateRsvpToggleService } from "./features/RsvpToggle/RsvpToggleService";
+import { CreateRsvpToggleController } from "./features/RsvpToggle/RsvpToggleController";
 
 type AsyncRequestHandler = RequestHandler;
 
@@ -280,6 +283,32 @@ this.app.post(
     await eventEditingController.submitEditForm(req, res);
   }),
 );
+// ── RSVP Toggle routes ───────────────────────────────────────────────
+
+const rsvpToggleRepo = CreateInMemoryRsvpToggleRepository();
+const rsvpToggleService = CreateRsvpToggleService(rsvpToggleRepo);
+const rsvpToggleController = CreateRsvpToggleController(rsvpToggleService);
+
+this.app.post(
+  "/events/:eventId/rsvp",
+  asyncHandler(async (req, res) => {
+    if (!this.requireAuthenticated(req, res)) {
+      return;
+    }
+    await rsvpToggleController.toggleRsvp(req, res);
+  }),
+);
+
+this.app.get(
+  "/events/:eventId/rsvp/status",
+  asyncHandler(async (req, res) => {
+    if (!this.requireAuthenticated(req, res)) {
+      return;
+    }
+    await rsvpToggleController.getRsvpStatus(req, res);
+  }),
+);
+
 
     // ── Error handler ────────────────────────────────────────────────
 
