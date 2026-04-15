@@ -25,4 +25,6 @@ class InMemoryEventRepository implements IEventRepository {
   }
 }
 
-export default InMemoryEventRepository;
+export function createInMemoryEventRepository(): IEventRepository {
+  return new InMemoryEventRepository();
+}
