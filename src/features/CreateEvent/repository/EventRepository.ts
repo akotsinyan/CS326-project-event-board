@@ -15,4 +15,5 @@ export interface CreateEventInput {
 
 export interface IEventRepository {
   add(data: CreateEventInput): Promise<Result<IEvent, EventError>>;
+  findAll(): Promise<Result<IEvent[], EventError>>;
 }
