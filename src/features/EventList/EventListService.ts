@@ -26,6 +26,7 @@ function startOfDay(d: Date): Date {
 
 function getWeekBounds(now: Date): { weekStart: Date; weekEnd: Date } {
   const day = now.getDay();
+  const day = now.getDay(); // 0 = Sunday
   const mondayOffset = day === 0 ? -6 : 1 - day;
   const weekStart = startOfDay(now);
   weekStart.setDate(weekStart.getDate() + mondayOffset);

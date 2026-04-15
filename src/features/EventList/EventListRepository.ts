@@ -30,6 +30,7 @@ function daysFromNow(days: number): Date {
   return d;
 }
 
+// Find the next Saturday (0 = same day if already Saturday)
 function nextWeekday(targetDay: number): Date {
   const d = new Date(now);
   const current = d.getDay();
