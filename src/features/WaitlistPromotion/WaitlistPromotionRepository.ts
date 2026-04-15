@@ -1,8 +1,5 @@
 import { Ok, Err, type Result } from "../../lib/result";
-import type {
-  IRsvp,
-  IRsvpToggleRepository,
-} from "../RsvpToggle/RsvpToggleRepository";
+import type { IRsvp, RsvpRepoError } from "../RsvpToggle/RsvpToggleRepository";
 
 export type WaitlistPromotionError = {
   type: "UnexpectedError";
@@ -12,6 +9,27 @@ export type WaitlistPromotionError = {
 export interface WaitlistPromotionResult {
   promoted: boolean;
   userId: string | null;
+}
+
+export interface IWaitlistPromotionRsvpRepository {
+  findByEventAndUser(
+    eventId: string,
+    userId: string,
+  ): Promise<Result<IRsvp | null, RsvpRepoError>>;
+
+  findWaitlistedByEvent(
+    eventId: string,
+  ): Promise<Result<IRsvp[], RsvpRepoError>>;
+
+  countWaitlistedAhead(
+    eventId: string,
+    userId: string,
+  ): Promise<Result<number, RsvpRepoError>>;
+
+  updateStatus(
+    rsvpId: string,
+    status: "going" | "waitlisted" | "cancelled",
+  ): Promise<Result<IRsvp, RsvpRepoError>>;
 }
 
 export interface IWaitlistPromotionRepository {
@@ -26,7 +44,7 @@ export interface IWaitlistPromotionRepository {
 }
 
 class WaitlistPromotionRepository implements IWaitlistPromotionRepository {
-  constructor(private readonly rsvpRepo: IRsvpToggleRepository) {}
+  constructor(private readonly rsvpRepo: IWaitlistPromotionRsvpRepository) {}
 
   async promoteFromWaitlist(
     eventId: string,
@@ -43,7 +61,7 @@ class WaitlistPromotionRepository implements IWaitlistPromotionRepository {
       });
     }
 
-    const nextInLine: IRsvp | undefined = waitlistedResult.value[0];
+    const nextInLine = waitlistedResult.value[0];
 
     if (!nextInLine) {
       return Ok({
@@ -107,7 +125,7 @@ class WaitlistPromotionRepository implements IWaitlistPromotionRepository {
 }
 
 export function CreateWaitlistPromotionRepository(
-  rsvpRepo: IRsvpToggleRepository,
+  rsvpRepo: IWaitlistPromotionRsvpRepository,
 ): IWaitlistPromotionRepository {
   return new WaitlistPromotionRepository(rsvpRepo);
 }
