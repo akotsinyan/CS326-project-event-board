@@ -43,14 +43,13 @@ class EventController implements IEventController {
       log.call(this.logger, `Create event failed: ${error.message}`);
       res
         .status(status)
-        .render("partials/error", { message: error.message, layout: false });
+        .render("events/new", { pageError: error.message });
       return;
     }
 
     this.logger.error(`Create event failed with unknown error: ${error}`);
-    res.status(500).render("partials/error", {
-      message: "Unable to create event: An unexpected error occurred.",
-      layout: false,
+    res.status(500).render("events/new", {
+      pageError: "An unexpected error occurred. Please try again later.",
     });
   }
 
