@@ -1,90 +1,97 @@
-import { Err, Ok, Result } from "../../../lib/result";
-import { IEvent } from "../model/event";
-import { EventError, ValidationError } from "../repository/error";
-import {
-  CreateEventInput,
-  IEventRepository,
-} from "../repository/EventRepository";
+import { Err, Ok, type Result } from "../../../lib/result";
+import type { IEvent } from "../model/event";
+import type { IEventEditingRepository } from "../../EventEditing/EventEditingRepository";
+
+// ── Error types ───────────────────────────────────────────────────────────────
+
+export type EventError = { name: "ValidationError"; message: string };
+
+export const ValidationError = (message: string): EventError => ({
+  name: "ValidationError",
+  message,
+});
+
+// ── Service interface ─────────────────────────────────────────────────────────
 
 export interface IEventService {
-  createEvent(eventData: CreateEventInput): Promise<Result<IEvent, EventError>>;
-  searchEvents(query: string): Promise<Result<IEvent[], EventError>>;
+  createEvent(data: {
+    title: string;
+    description: string;
+    location: string;
+    startDatetime: Date;
+    endDatetime: Date;
+    organizerId: string;
+    organizerName: string;
+    category?: string;
+    capacity?: number | null;
+  }): Promise<Result<IEvent, EventError>>;
 }
+
+// ── Implementation ────────────────────────────────────────────────────────────
 
 class EventService implements IEventService {
-  private requiredFields: (keyof CreateEventInput)[] = [
-    "title",
-    "description",
-    "location",
-    "startDatetime",
-    "endDatetime",
-    "organizerId",
-  ];
+  constructor(private readonly repo: IEventEditingRepository) {}
 
-  constructor(private readonly repository: IEventRepository) {}
+  private validate(data: {
+    title: string;
+    description: string;
+    location: string;
+    startDatetime: Date;
+    endDatetime: Date;
+    organizerId: string;
+    capacity?: number | null;
+  }): EventError | null {
+    if (!data.title.trim()) return ValidationError("Title is required.");
+    if (!data.description.trim()) return ValidationError("Description is required.");
+    if (!data.location.trim()) return ValidationError("Location is required.");
+    if (!(data.startDatetime instanceof Date) || isNaN(data.startDatetime.getTime())) {
+      return ValidationError("Start date is invalid.");
+    }
+    if (!(data.endDatetime instanceof Date) || isNaN(data.endDatetime.getTime())) {
+      return ValidationError("End date is invalid.");
+    }
+    if (data.startDatetime >= data.endDatetime) {
+      return ValidationError("Start time must be before end time.");
+    }
+    if (data.capacity !== undefined && data.capacity !== null && data.capacity < 1) {
+      return ValidationError("Capacity must be at least 1.");
+    }
+    return null;
+  }
 
-  normalize(eventData: CreateEventInput): CreateEventInput {
-    return {
-      ...eventData,
-      title: eventData.title.trim(),
-      description: eventData.description.trim(),
-      location: eventData.location.trim(),
-      category: eventData.category?.trim(),
-      organizerId: eventData.organizerId.trim(),
+  async createEvent(data: {
+    title: string;
+    description: string;
+    location: string;
+    startDatetime: Date;
+    endDatetime: Date;
+    organizerId: string;
+    organizerName: string;
+    category?: string;
+    capacity?: number | null;
+  }): Promise<Result<IEvent, EventError>> {
+    const normalized = {
+      ...data,
+      title: data.title.trim(),
+      description: data.description.trim(),
+      location: data.location.trim(),
+      category: data.category?.trim(),
     };
-  }
 
-  validateMissingFields(eventData: CreateEventInput): Result<null, EventError> {
-    for (const field of this.requiredFields) {
-      if (!eventData[field]) {
-        return Err(ValidationError(`Missing required field: ${field}`));
-      }
-    }
-    return Ok(null);
-  }
+    const validationError = this.validate(normalized);
+    if (validationError) return Err(validationError);
 
-  validate(eventData: CreateEventInput): Result<null, EventError> {
-    const missingFieldsResult = this.validateMissingFields(eventData);
-
-    if (!missingFieldsResult.ok) {
-      return missingFieldsResult;
+    const result = await this.repo.add({ ...normalized, status: "draft" });
+    if (!result.ok) {
+      return Err(ValidationError("Failed to save event. Please try again."));
     }
 
-    if (eventData.startDatetime >= eventData.endDatetime) {
-      return Err(ValidationError("Start datetime must be before end datetime"));
-    }
-
-    if (eventData.capacity !== undefined && eventData.capacity < 0) {
-      return Err(ValidationError("Capacity must be a non-negative number"));
-    }
-
-    return Ok(null);
-  }
-
-  async createEvent(
-    eventData: CreateEventInput,
-  ): Promise<Result<IEvent, EventError>> {
-    const normalizedData = this.normalize(eventData);
-    const validationResult = this.validate(normalizedData);
-
-    if (!validationResult.ok) {
-      return validationResult;
-    }
-
-    return this.repository.add(normalizedData);
-  }
-
-  async searchEvents(query: string): Promise<Result<IEvent[], EventError>> {
-    const trimmedQuery = query.trim();
-    if (!trimmedQuery) {
-      return Err(ValidationError("Missing search query"));
-    }
-    return this.repository.search(trimmedQuery);
+    return Ok(result.value);
   }
 }
 
-export const createEventService = (
-  repository: IEventRepository,
-): EventService => {
-  return new EventService(repository);
-};
+// ── Factory function ──────────────────────────────────────────────────────────
+
+export function createEventService(repo: IEventEditingRepository): IEventService {
+  return new EventService(repo);
+}

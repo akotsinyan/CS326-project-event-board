@@ -43,6 +43,14 @@ function formatTime(d) {
             <%= formatTime(entry.eventStartDatetime) %> &ndash; <%= formatTime(entry.eventEndDatetime) %>
           </p>
           <p class="text-sm text-slate-500"><%= entry.eventLocation %></p>
+          <div class="flex items-center gap-3 mt-2">
+            <a href="/events/<%= entry.eventId %>" class="text-blue-600 hover:text-blue-700 text-sm font-semibold no-underline">View Event →</a>
+            <form method="POST" action="/events/<%= entry.eventId %>/rsvp" class="inline">
+              <button type="submit" class="text-red-600 hover:text-red-700 text-sm font-semibold cursor-pointer bg-transparent border-0 p-0">
+                Cancel RSVP
+              </button>
+            </form>
+          </div>
         </li>
       <% } %>
     </ul>
@@ -80,6 +88,7 @@ function formatTime(d) {
             <%= formatTime(entry.eventStartDatetime) %> &ndash; <%= formatTime(entry.eventEndDatetime) %>
           </p>
           <p class="text-sm text-slate-400"><%= entry.eventLocation %></p>
+          <a href="/events/<%= entry.eventId %>" class="text-slate-400 hover:text-slate-600 text-sm font-semibold no-underline mt-2 inline-block">View Event →</a>
         </li>
       <% } %>
     </ul>

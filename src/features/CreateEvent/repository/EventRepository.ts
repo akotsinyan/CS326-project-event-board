@@ -1,23 +1,7 @@
-import { Result } from "../../../lib/result";
-import { IEvent } from "../model/event";
-import { EventError } from "./error";
-
-export interface CreateEventInput {
-  title: string;
-  description: string;
-  location: string;
-  category?: string;
-  capacity?: number;
-  startDatetime: Date;
-  endDatetime: Date;
-  organizerId: string;
-}
-
-export interface IEventRepository {
-  add(data: CreateEventInput): Promise<Result<IEvent, EventError>>;
-<<<<<<< task/rsvp-dashboard-service
-  findAll(): Promise<Result<IEvent[], EventError>>;
-=======
-  search(query: string): Promise<Result<IEvent[], EventError>>;
->>>>>>> dev
-}
+// Re-exports from the canonical event repository so existing imports keep working.
+export type {
+  IEventEditingRepository as IEventRepository,
+  EventEditingRepoError as EventRepoError,
+  UpdateEventInput,
+  CreateEventData,
+} from "../../EventEditing/EventEditingRepository";

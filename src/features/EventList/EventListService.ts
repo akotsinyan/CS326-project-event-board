@@ -1,6 +1,6 @@
 import { Ok, Err, type Result } from "../../lib/result";
 import type { IEvent } from "../CreateEvent/model/event";
-import type { IEventListRepository, EventListFilter, Timeframe, EventListRepoError } from "./EventListRepository";
+import type { IEventListRepository, EventListFilter, Timeframe } from "./EventListRepository";
 
 // ── Error types ───────────────────────────────────────────────────────────────
 
@@ -25,7 +25,7 @@ function startOfDay(d: Date): Date {
 }
 
 function getWeekBounds(now: Date): { weekStart: Date; weekEnd: Date } {
-  const day = now.getDay(); // 0 = Sunday
+  const day = now.getDay();
   const mondayOffset = day === 0 ? -6 : 1 - day;
   const weekStart = startOfDay(now);
   weekStart.setDate(weekStart.getDate() + mondayOffset);
@@ -69,8 +69,8 @@ class EventListService implements IEventListService {
 
     const repoResult = await this.repo.findPublished();
     if (!repoResult.ok) {
-      const { message } = repoResult.value as EventListRepoError;
-      return Err({ type: "UnexpectedError" as const, message });
+      const e = repoResult.value;
+      return Err({ type: "UnexpectedError" as const, message: "message" in e ? e.message : "Failed to fetch events." });
     }
 
     let events = repoResult.value;
@@ -78,6 +78,16 @@ class EventListService implements IEventListService {
     if (filter.category) {
       const cat = filter.category.toLowerCase();
       events = events.filter((e) => e.category.toLowerCase() === cat);
+    }
+
+    if (filter.query) {
+      const q = filter.query.toLowerCase();
+      events = events.filter(
+        (e) =>
+          e.title.toLowerCase().includes(q) ||
+          e.description.toLowerCase().includes(q) ||
+          e.location.toLowerCase().includes(q),
+      );
     }
 
     events = applyTimeframe(events, timeframe, new Date());

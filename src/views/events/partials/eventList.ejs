@@ -1,0 +1,29 @@
+<% if (events.length === 0) { %>
+  <p class="text-slate-500 text-sm mt-4">No events match your filters.</p>
+<% } else { %>
+  <ul class="space-y-3">
+    <% for (const event of events) { %>
+      <li class="p-5 border border-slate-200 rounded-2xl bg-white shadow-sm hover:shadow-md transition-shadow">
+        <a href="/events/<%= event.id %>" class="no-underline block">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <span class="text-lg font-bold text-slate-900"><%= event.title %></span>
+            <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+              <%= event.category %>
+            </span>
+          </div>
+          <p class="text-sm text-slate-500 mt-1">
+            <%= event.startDatetime.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) %>
+            &middot;
+            <%= event.startDatetime.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) %>
+            &ndash;
+            <%= event.endDatetime.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) %>
+          </p>
+          <p class="text-sm text-slate-500"><%= event.location %></p>
+          <% if (event.capacity !== null) { %>
+            <p class="text-xs text-slate-400 mt-1">Capacity: <%= event.capacity %></p>
+          <% } %>
+        </a>
+      </li>
+    <% } %>
+  </ul>
+<% } %>
