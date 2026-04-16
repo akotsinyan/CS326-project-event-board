@@ -1,0 +1,116 @@
+import { Ok, Err, type Result } from "../../lib/result";
+import type { IEvent } from "../CreateEvent/model/event";
+import type { IRSVP } from "./model/rsvp";
+import type { IRSVPRepository, RSVPRepoError } from "./repository/RSVPRepository";
+import type { IEventRepository } from "../CreateEvent/repository/EventRepository";
+
+// ── Output types ──────────────────────────────────────────────────────────────
+
+export interface RSVPDashboardEntry {
+  rsvpId: string;
+  eventId: string;
+  status: IRSVP["status"];
+  eventTitle: string;
+  eventCategory: string;
+  eventLocation: string;
+  eventStartDatetime: Date;
+  eventEndDatetime: Date;
+  eventStatus: string;
+}
+
+export interface RSVPDashboard {
+  upcoming: RSVPDashboardEntry[];
+  pastOrCancelled: RSVPDashboardEntry[];
+}
+
+// ── Error types ───────────────────────────────────────────────────────────────
+
+export type RSVPDashboardError =
+  | { type: "Unauthorized"; message: string }
+  | { type: "UnexpectedError"; message: string };
+
+// ── Service interface ─────────────────────────────────────────────────────────
+
+export interface IRSVPDashboardService {
+  getDashboard(userId: string, userRole: string): Promise<Result<RSVPDashboard, RSVPDashboardError>>;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function isUpcoming(entry: RSVPDashboardEntry, now: Date): boolean {
+  return (
+    (entry.status === "attending" || entry.status === "waitlisted") &&
+    entry.eventStartDatetime > now &&
+    entry.eventStatus !== "cancelled"
+  );
+}
+
+function toEntry(rsvp: IRSVP, event: IEvent): RSVPDashboardEntry {
+  return {
+    rsvpId: rsvp.id,
+    eventId: event.id,
+    status: rsvp.status,
+    eventTitle: event.title,
+    eventCategory: event.category,
+    eventLocation: event.location,
+    eventStartDatetime: event.startDatetime,
+    eventEndDatetime: event.endDatetime,
+    eventStatus: event.status,
+  };
+}
+
+// ── Implementation ────────────────────────────────────────────────────────────
+
+class RSVPDashboardService implements IRSVPDashboardService {
+  constructor(
+    private readonly rsvpRepo: IRSVPRepository,
+    private readonly eventRepo: IEventRepository
+  ) {}
+
+  async getDashboard(userId: string, userRole: string): Promise<Result<RSVPDashboard, RSVPDashboardError>> {
+    if (userRole !== "user") {
+      return Err({ type: "Unauthorized" as const, message: "Only members can view the RSVP dashboard." });
+    }
+
+    const [rsvpResult, eventResult] = await Promise.all([
+      this.rsvpRepo.findByUserId(userId),
+      this.eventRepo.findAll(),
+    ]);
+
+    if (!rsvpResult.ok) {
+      const err = rsvpResult.value as RSVPRepoError;
+      return Err({ type: "UnexpectedError" as const, message: err.message });
+    }
+    if (!eventResult.ok) {
+      return Err({ type: "UnexpectedError" as const, message: "Failed to fetch event details." });
+    }
+
+    const eventMap = new Map<string, IEvent>(eventResult.value.map((e) => [e.id, e]));
+    const now = new Date();
+
+    const entries: RSVPDashboardEntry[] = [];
+    for (const rsvp of rsvpResult.value) {
+      const event = eventMap.get(rsvp.eventId);
+      if (event) entries.push(toEntry(rsvp, event));
+    }
+
+    const upcoming = entries
+      .filter((e) => isUpcoming(e, now))
+      .sort((a, b) => a.eventStartDatetime.getTime() - b.eventStartDatetime.getTime());
+
+    const pastOrCancelled = entries
+      .filter((e) => !isUpcoming(e, now))
+      .sort((a, b) => b.eventStartDatetime.getTime() - a.eventStartDatetime.getTime());
+
+    return Ok({ upcoming, pastOrCancelled });
+  }
+}
+
+// ── Factory function ──────────────────────────────────────────────────────────
+
+export function CreateRSVPDashboardService(
+  rsvpRepo: IRSVPRepository,
+  eventRepo: IEventRepository
+): IRSVPDashboardService {
+  return new RSVPDashboardService(rsvpRepo, eventRepo);
+}
