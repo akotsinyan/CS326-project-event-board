@@ -1,14 +1,15 @@
 import { Ok, Err, type Result } from "../../lib/result";
 import type { IEvent } from "../CreateEvent/model/event";
-import type { IRsvp, IRsvpToggleRepository } from "../RsvpToggle/RsvpToggleRepository";
-import type { IEventListRepository } from "../EventList/EventListRepository";
+import type { IRSVP } from "./model/rsvp";
+import type { IRSVPRepository, RSVPRepoError } from "./repository/RSVPRepository";
+import type { IEventRepository } from "../CreateEvent/repository/EventRepository";
 
 // ── Output types ──────────────────────────────────────────────────────────────
 
 export interface RSVPDashboardEntry {
   rsvpId: string;
   eventId: string;
-  rsvpStatus: IRsvp["status"];
+  status: IRSVP["status"];
   eventTitle: string;
   eventCategory: string;
   eventLocation: string;
@@ -36,11 +37,19 @@ export interface IRSVPDashboardService {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function toEntry(rsvp: IRsvp, event: IEvent): RSVPDashboardEntry {
+function isUpcoming(entry: RSVPDashboardEntry, now: Date): boolean {
+  return (
+    (entry.status === "attending" || entry.status === "waitlisted") &&
+    entry.eventStartDatetime > now &&
+    entry.eventStatus !== "cancelled"
+  );
+}
+
+function toEntry(rsvp: IRSVP, event: IEvent): RSVPDashboardEntry {
   return {
     rsvpId: rsvp.id,
     eventId: event.id,
-    rsvpStatus: rsvp.status,
+    status: rsvp.status,
     eventTitle: event.title,
     eventCategory: event.category,
     eventLocation: event.location,
@@ -48,14 +57,6 @@ function toEntry(rsvp: IRsvp, event: IEvent): RSVPDashboardEntry {
     eventEndDatetime: event.endDatetime,
     eventStatus: event.status,
   };
-}
-
-function isUpcoming(entry: RSVPDashboardEntry, now: Date): boolean {
-  return (
-    (entry.rsvpStatus === "going" || entry.rsvpStatus === "waitlisted") &&
-    entry.eventStartDatetime > now &&
-    entry.eventStatus !== "cancelled"
-  );
 }
 
 // ── Implementation ────────────────────────────────────────────────────────────

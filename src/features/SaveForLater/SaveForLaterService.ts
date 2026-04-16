@@ -57,7 +57,9 @@ class SaveForLaterService implements ISaveForLaterService {
 
     const result = await this.repo.findByUser(user.id);
 
-    if (!result.ok) return result;
+    if (!result.ok) {
+      return Err(result.value as SaveEventError);
+    }
 
     return {
       ok: true,

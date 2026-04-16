@@ -29,7 +29,7 @@ class EventDetailService implements IEventDetailPageService {
     const result = await this.repo.findById(eventId);
 
     if (!result.ok) {
-      return result; // already correctly shaped error
+      return Err(result.value as EventDetailError);
     }
 
     const event = result.value;

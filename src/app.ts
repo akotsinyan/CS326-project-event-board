@@ -28,6 +28,14 @@ import { CreateRsvpToggleController } from "./features/RsvpToggle/RsvpToggleCont
 import { createInMemoryEventRepository } from "./features/CreateEvent/repository/InMemoryEventRepository";
 import { createEventService } from "./features/CreateEvent/service/EventService";
 import { createEventController } from "./features/CreateEvent/controller/EventController";
+import { CreateEventPublishingService } from "./features/EventPublishing/EventPublishingService";
+import { CreateEventPublishingController } from "./features/EventPublishing/EventPublishingController";
+import { CreateInMemoryEventDetailRepository } from "./features/EventDetailPage/EventDetailPageRepository";
+import { CreateEventDetailService } from "./features/EventDetailPage/EventDetailPageService";
+import { CreateEventDetailController } from "./features/EventDetailPage/EventDetailPageController";
+import { CreateInMemorySaveForLaterRepository } from "./features/SaveForLater/SaveForLaterRepo";
+import { CreateSaveForLaterService } from "./features/SaveForLater/SaveForLaterService";
+import { CreateSaveForLaterController } from "./features/SaveForLater/SaveForLaterController";
 
 type AsyncRequestHandler = RequestHandler;
 
@@ -310,6 +318,31 @@ this.app.post(
     await eventEditingController.submitEditForm(req, res);
   }),
 );
+// ── Event Publishing routes ──────────────────────────────────────────
+
+const eventPublishingService = CreateEventPublishingService(eventEditingRepo);
+const eventPublishingController = CreateEventPublishingController(eventPublishingService);
+
+this.app.post(
+  "/events/:eventId/publish",
+  asyncHandler(async (req, res) => {
+    if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers and admins can publish events.")) {
+      return;
+    }
+    await eventPublishingController.publishEvent(req, res);
+  }),
+);
+
+this.app.post(
+  "/events/:eventId/cancel",
+  asyncHandler(async (req, res) => {
+    if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers and admins can cancel events.")) {
+      return;
+    }
+    await eventPublishingController.cancelEvent(req, res);
+  }),
+);
+
 // ── RSVP Toggle routes ───────────────────────────────────────────────
 
 const rsvpToggleRepo = CreateInMemoryRsvpToggleRepository();
@@ -333,6 +366,32 @@ this.app.get(
       return;
     }
     await rsvpToggleController.getRsvpStatus(req, res);
+  }),
+);
+
+// ── Save for Later routes ─────────────────────────────────────────────
+
+const saveForLaterRepo = CreateInMemorySaveForLaterRepository();
+const saveForLaterService = CreateSaveForLaterService(saveForLaterRepo);
+const saveForLaterController = CreateSaveForLaterController(saveForLaterService, this.logger);
+
+this.app.post(
+  "/events/:eventId/save",
+  asyncHandler(async (req, res) => {
+    if (!this.requireAuthenticated(req, res)) {
+      return;
+    }
+    await saveForLaterController.toggleFromButton(req, res);
+  }),
+);
+
+this.app.get(
+  "/saved",
+  asyncHandler(async (req, res) => {
+    if (!this.requireAuthenticated(req, res)) {
+      return;
+    }
+    await saveForLaterController.showSavedPage(req, res);
   }),
 );
 
@@ -379,6 +438,20 @@ this.app.post(
       capacity ? parseInt(capacity) : undefined,
     ); 
   }),
+);
+
+// Event Search Route
+
+this.app.get(
+  "/events/search",
+  asyncHandler(async (req, res) => {
+    if (!this.requireAuthenticated(req, res)) {
+      return;
+    }
+
+    const query = typeof req.body.query === "string" ? req.body.query : "";
+    await eventController.search(res, query);
+   }),
 );
 
 

@@ -17,6 +17,10 @@ export interface IEventController {
     category?: string,
     capacity?: number,
   ): Promise<void>;
+  search(
+    res: Response,
+    query: string,
+  ): Promise<void>;
 }
 
 class EventController implements IEventController {
@@ -36,21 +40,16 @@ class EventController implements IEventController {
     return session.authenticatedUser?.userId ?? "";
   }
 
-  private handleError(res: Response, error: any): void {
+  private handleError(purpose: string, error: any): {status: number; message: string} {
     if (error.name && error.message) {
       const status = this.mapErrorStatus(error);
       const log = status >= 500 ? this.logger.error : this.logger.warn;
-      log.call(this.logger, `Create event failed: ${error.message}`);
-      res
-        .status(status)
-        .render("events/new", { pageError: error.message });
-      return;
+      log.call(this.logger, `${purpose} failed: ${error.message}`);
+      return { status, message: error.message };
     }
 
-    this.logger.error(`Create event failed with unknown error: ${error}`);
-    res.status(500).render("events/new", {
-      pageError: "An unexpected error occurred. Please try again later.",
-    });
+    this.logger.error(`${purpose} failed with unknown error: ${error}`);
+    return { status: 500, message: "An unexpected error occurred. Please try again later." };
   }
 
   renderCreateEventPage(res: Response, pageError?: string): void {
@@ -82,13 +81,31 @@ class EventController implements IEventController {
     });
 
     if (!result.ok) {
-      this.handleError(res, result.value);
+      const { status, message } = this.handleError("Create event", result.value);
+      res.status(status).render("events/new", { pageError: message });
       return;
     }
 
     const event = result.value;
     this.logger.info(`Event created successfully: ${event.id}`);
     res.render("/home", { session });
+  }
+
+  async search(
+    res: Response,
+    query: string,
+  ): Promise<void> {
+    const result = await this.service.searchEvents(query);
+
+    if (!result.ok) {
+      const { status, message } = this.handleError("Search events", result.value);
+      res.status(status).render("partials/error", { message });
+      return;
+    }
+
+    const events = result.value;
+    this.logger.info(`Events searched successfully: ${events.length}`);
+    res.render("events/index", { events });
   }
 }
 

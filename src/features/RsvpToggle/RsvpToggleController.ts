@@ -1,7 +1,5 @@
-// src/features/RsvpToggle/RsvpToggleController.ts
-
 import type { Request, Response } from "express";
-import type { IRsvpToggleService } from "./RsvpToggleService";
+import type { IRsvpToggleService, RsvpToggleError } from "./RsvpToggleService";
 import type { AppSessionStore } from "../../session/AppSession";
 
 export interface IRsvpToggleController {
@@ -21,19 +19,20 @@ class RsvpToggleController implements IRsvpToggleController {
       return;
     }
 
-    const { eventId } = req.params;
+    const eventId = Array.isArray(req.params.eventId) ? req.params.eventId[0] : req.params.eventId;
     const userId = authedUser.userId;
     const userRole = authedUser.role;
 
     const result = await this.rsvpService.toggleRsvp(eventId, userId, userRole);
 
     if (!result.ok) {
-      const error = result.value;
+      const error = result.value as RsvpToggleError;
+
       if (error.type === "EventNotFound") {
         res.status(404).render("error", { message: "Event not found." });
       } else if (error.type === "Unauthorized") {
         res.status(403).render("error", { message: "Organizers and admins cannot RSVP." });
-      } else if (error.type === "InvalidInput") {
+      } else if (error.type === "InvalidState") {
         res.status(400).render("error", { message: error.message });
       } else {
         res.status(500).render("error", { message: "Something went wrong." });
@@ -53,7 +52,7 @@ class RsvpToggleController implements IRsvpToggleController {
       return;
     }
 
-    const { eventId } = req.params;
+    const eventId = Array.isArray(req.params.eventId) ? req.params.eventId[0] : req.params.eventId;
     const result = await this.rsvpService.getRsvpStatus(eventId, authedUser.userId);
 
     if (!result.ok) {
