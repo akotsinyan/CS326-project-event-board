@@ -42,6 +42,7 @@ export type EventEditingRepoError =
 export interface IEventEditingRepository {
   findById(eventId: string): Promise<Result<IEvent, EventEditingRepoError>>;
   update(eventId: string, data: UpdateEventInput): Promise<Result<IEvent, EventEditingRepoError>>;
+  updateStatus(eventId: string, status: EventStatus): Promise<Result<IEvent, EventEditingRepoError>>;
 }
 
 // ── Seed data ─────────────────────────────────────────────────────────────────
@@ -103,6 +104,19 @@ class InMemoryEventEditingRepository implements IEventEditingRepository {
       return Ok(updated);
     } catch {
       return Err({ type: "UnexpectedError" as const, message: "Failed to update event." });
+    }
+  }
+
+  async updateStatus(eventId: string, status: EventStatus): Promise<Result<IEvent, EventEditingRepoError>> {
+    try {
+      const index = this.events.findIndex((e) => e.id === eventId);
+      if (index === -1) return Err({ type: "EventNotFound" as const });
+
+      const updated: IEvent = { ...this.events[index], status, updatedAt: new Date() };
+      this.events[index] = updated;
+      return Ok(updated);
+    } catch {
+      return Err({ type: "UnexpectedError" as const, message: "Failed to update event status." });
     }
   }
 }
