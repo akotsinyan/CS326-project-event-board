@@ -8,6 +8,7 @@ import {
 
 export interface IEventService {
   createEvent(eventData: CreateEventInput): Promise<Result<IEvent, EventError>>;
+  searchEvents(query: string): Promise<Result<IEvent[], EventError>>;
 }
 
 class EventService implements IEventService {
@@ -71,6 +72,14 @@ class EventService implements IEventService {
     }
 
     return this.repository.add(normalizedData);
+  }
+
+  async searchEvents(query: string): Promise<Result<IEvent[], EventError>> {
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) {
+      return Err(ValidationError("Missing search query"));
+    }
+    return this.repository.search(trimmedQuery);
   }
 }
 
