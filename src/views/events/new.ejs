@@ -1,0 +1,127 @@
+<section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-gradient-to-b from-white to-slate-50 shadow-lg">
+  <h1 class="text-3xl font-bold text-slate-900 mb-1">Create Event</h1>
+  <p class="text-slate-500">Fields marked <span class="text-red-500">*</span> are required.</p>
+</section>
+
+<% if (pageError) { %>
+  <%- include("../partials/error", { message: pageError }) %>
+<% } %>
+
+<section class="max-w-2xl p-6 border border-slate-200 rounded-2xl bg-white shadow-lg">
+  <form method="POST" action="/events/new" class="space-y-5">
+
+    <div>
+      <label for="title" class="block text-sm font-semibold text-slate-700 mb-1">
+        Title <span class="text-red-500">*</span>
+      </label>
+      <input
+        type="text"
+        id="title"
+        name="title"
+        required
+        value="<%= formValues?.title ?? '' %>"
+        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+
+    <div>
+      <label for="description" class="block text-sm font-semibold text-slate-700 mb-1">
+        Description <span class="text-red-500">*</span>
+      </label>
+      <textarea
+        id="description"
+        name="description"
+        rows="4"
+        required
+        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      ><%= formValues?.description ?? '' %></textarea>
+    </div>
+
+    <div>
+      <label for="location" class="block text-sm font-semibold text-slate-700 mb-1">
+        Location <span class="text-red-500">*</span>
+      </label>
+      <input
+        type="text"
+        id="location"
+        name="location"
+        required
+        value="<%= formValues?.location ?? '' %>"
+        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+
+    <div>
+      <label for="category" class="block text-sm font-semibold text-slate-700 mb-1">
+        Category
+      </label>
+      <select
+        id="category"
+        name="category"
+        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <option value="">— select —</option>
+        <option value="tech"     <%= formValues?.category === "tech"     ? "selected" : "" %>>Tech</option>
+        <option value="careers"  <%= formValues?.category === "careers"  ? "selected" : "" %>>Careers</option>
+        <option value="social"   <%= formValues?.category === "social"   ? "selected" : "" %>>Social</option>
+        <option value="academic" <%= formValues?.category === "academic" ? "selected" : "" %>>Academic</option>
+      </select>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label for="startDatetime" class="block text-sm font-semibold text-slate-700 mb-1">
+          Start Date & Time <span class="text-red-500">*</span>
+        </label>
+        <input
+          type="datetime-local"
+          id="startDatetime"
+          name="startDatetime"
+          required
+          value="<%= formValues?.startDatetime ?? '' %>"
+          class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+      <div>
+        <label for="endDatetime" class="block text-sm font-semibold text-slate-700 mb-1">
+          End Date & Time <span class="text-red-500">*</span>
+        </label>
+        <input
+          type="datetime-local"
+          id="endDatetime"
+          name="endDatetime"
+          required
+          value="<%= formValues?.endDatetime ?? '' %>"
+          class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+    </div>
+
+    <div>
+      <label for="capacity" class="block text-sm font-semibold text-slate-700 mb-1">
+        Capacity <span class="text-slate-400 font-normal">(leave blank for unlimited)</span>
+      </label>
+      <input
+        type="number"
+        id="capacity"
+        name="capacity"
+        min="1"
+        value="<%= formValues?.capacity ?? '' %>"
+        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+
+    <div class="flex items-center gap-4 pt-2">
+      <button
+        type="submit"
+        class="px-5 py-2.5 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 cursor-pointer"
+      >
+        Create Event
+      </button>
+      <a href="/events" class="text-slate-500 hover:text-slate-700 text-sm no-underline">
+        Cancel
+      </a>
+    </div>
+
+  </form>
+</section>

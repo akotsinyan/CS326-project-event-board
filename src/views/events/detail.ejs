@@ -1,0 +1,147 @@
+<section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-gradient-to-b from-white to-slate-50 shadow-lg">
+  <div class="flex items-start justify-between gap-4 flex-wrap">
+    <div>
+      <h1 class="text-3xl font-bold text-slate-900 mb-1"><%= event.title %></h1>
+      <p class="text-slate-500">Organized by <%= event.organizerName %></p>
+    </div>
+    <% const statusColors = { published: "bg-green-100 text-green-800 border-green-200", draft: "bg-yellow-100 text-yellow-800 border-yellow-200", cancelled: "bg-red-100 text-red-800 border-red-200", past: "bg-slate-100 text-slate-600 border-slate-200" }; %>
+    <span class="inline-block text-xs font-semibold px-3 py-1.5 rounded-full border capitalize <%= statusColors[event.status] || 'bg-slate-100 text-slate-600 border-slate-200' %>">
+      <%= event.status %>
+    </span>
+  </div>
+</section>
+
+<% if (pageError) { %>
+  <%- include("../partials/error", { message: pageError }) %>
+<% } %>
+
+<% if (event.status === "cancelled") { %>
+  <div class="mb-6 p-4 rounded-xl border border-red-200 bg-red-50 text-red-800">
+    <p class="font-semibold">This event has been cancelled.</p>
+  </div>
+<% } %>
+
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- Main content -->
+  <div class="lg:col-span-2">
+    <!-- Event Details Card -->
+    <div class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg mb-6">
+      <h2 class="text-lg font-bold text-slate-900 mb-4">Event Details</h2>
+
+      <div class="space-y-4">
+        <div>
+          <p class="text-sm font-semibold text-slate-600 mb-1">Date & Time</p>
+          <p class="text-slate-900">
+            <%= event.startDatetime.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }) %>
+            <br />
+            <%= event.startDatetime.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) %>
+            &ndash;
+            <%= event.endDatetime.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) %>
+          </p>
+        </div>
+
+        <div>
+          <p class="text-sm font-semibold text-slate-600 mb-1">Location</p>
+          <p class="text-slate-900"><%= event.location %></p>
+        </div>
+
+        <div>
+          <p class="text-sm font-semibold text-slate-600 mb-1">Category</p>
+          <p class="inline-block text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+            <%= event.category %>
+          </p>
+        </div>
+
+        <% if (event.capacity !== null) { %>
+          <div>
+            <p class="text-sm font-semibold text-slate-600 mb-1">Capacity</p>
+            <p class="text-slate-900">
+              <%= event.attendeeCount %> / <%= event.capacity %> attendees
+              <span class="text-slate-500 text-sm">(<%= event.capacity - event.attendeeCount %> spots remaining)</span>
+            </p>
+          </div>
+        <% } else { %>
+          <div>
+            <p class="text-sm font-semibold text-slate-600 mb-1">Attendance</p>
+            <p class="text-slate-900"><%= event.attendeeCount %> attendees (unlimited capacity)</p>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Description Card -->
+    <div class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg">
+      <h2 class="text-lg font-bold text-slate-900 mb-4">About This Event</h2>
+      <p class="text-slate-700 whitespace-pre-wrap"><%= event.description || "No description provided." %></p>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="lg:col-span-1">
+    <!-- Organizer Info -->
+    <div class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg mb-6">
+      <h3 class="text-sm font-bold text-slate-900 mb-2">Organizer</h3>
+      <p class="text-slate-700"><%= event.organizerName %></p>
+    </div>
+
+    <!-- Organizer / Admin Actions -->
+    <% if (canEdit || canPublish || canCancel) { %>
+      <div class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg mb-6">
+        <h3 class="text-sm font-bold text-slate-900 mb-3">Event Management</h3>
+        <div class="space-y-2">
+          <% if (canEdit) { %>
+            <a
+              href="/events/<%= event.id %>/edit"
+              class="block w-full px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold text-center hover:bg-blue-700 no-underline"
+            >
+              Edit Event
+            </a>
+          <% } %>
+          <% if (canPublish) { %>
+            <form method="POST" action="/events/<%= event.id %>/publish">
+              <button
+                type="submit"
+                class="w-full px-4 py-2 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 cursor-pointer"
+              >
+                Publish Event
+              </button>
+            </form>
+          <% } %>
+          <% if (canCancel) { %>
+            <button
+              type="button"
+              class="w-full px-4 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 cursor-pointer"
+              onclick="if (confirm('Are you sure you want to cancel this event? This cannot be undone.')) { document.getElementById('cancelForm').submit(); }"
+            >
+              Cancel Event
+            </button>
+            <form id="cancelForm" method="POST" action="/events/<%= event.id %>/cancel" style="display: none;"></form>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+
+    <!-- RSVP Button -->
+    <% if (canRsvp) { %>
+      <div class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg mb-6">
+        <%- include("./rsvp-button", { eventId: event.id, rsvpStatus }) %>
+        <% if (waitlistPosition !== null) { %>
+          <p class="text-sm text-yellow-700 mt-2">You are #<%= waitlistPosition %> on the waitlist.</p>
+        <% } %>
+      </div>
+    <% } %>
+
+    <% if (canSave) { %>
+      <div class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg">
+        <%- include("./partials/saveButton", { eventId: event.id, state: "unsaved" }) %>
+      </div>
+    <% } %>
+  </div>
+</section>
+
+<!-- Back Link -->
+<div class="mt-6">
+  <a href="/events" class="text-blue-600 hover:text-blue-700 text-sm font-semibold no-underline">
+    ← Back to Events
+  </a>
+</div>

@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
+  url = "CHANGE_THIS"
 }
 
 // TODO: Define your project's data models here.
