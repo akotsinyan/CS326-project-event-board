@@ -3,6 +3,7 @@ import express, { Request, RequestHandler, Response } from "express";
 import session from "express-session";
 import Layouts from "express-ejs-layouts";
 import { IAuthController } from "./auth/AuthController";
+import type { IEventListController } from "./features/EventList/EventListController";
 import {
   AuthenticationRequired,
   AuthorizationRequired,
@@ -23,6 +24,9 @@ import { CreateEventEditingController } from "./features/EventEditing/EventEditi
 import { CreateInMemoryRsvpToggleRepository } from "./features/RsvpToggle/RsvpToggleRepository";
 import { CreateRsvpToggleService } from "./features/RsvpToggle/RsvpToggleService";
 import { CreateRsvpToggleController } from "./features/RsvpToggle/RsvpToggleController";
+import { createInMemoryEventRepository } from "./features/CreateEvent/repository/InMemoryEventRepository";
+import { createEventService } from "./features/CreateEvent/service/EventService";
+import { createEventController } from "./features/CreateEvent/controller/EventController";
 
 type AsyncRequestHandler = RequestHandler;
 
@@ -41,6 +45,7 @@ class ExpressApp implements IApp {
 
   constructor(
     private readonly authController: IAuthController,
+    private readonly eventListController: IEventListController,
     private readonly logger: ILoggingService,
   ) {
     this.app = express();
@@ -258,6 +263,16 @@ class ExpressApp implements IApp {
         res.render("home", { session: browserSession, pageError: null });
       }),
     );
+    // ── Event List route ─────────────────────────────────────────────────
+
+    this.app.get(
+      "/events",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        await this.eventListController.showEventList(req, res);
+      }),
+    );
+
     // ── Event Editing routes ─────────────────────────────────────────────
 
 const eventEditingRepo = CreateInMemoryEventEditingRepository();
@@ -309,6 +324,51 @@ this.app.get(
   }),
 );
 
+// Event Creation Routes
+const eventRepository = createInMemoryEventRepository();
+const eventService = createEventService(eventRepository);
+const eventController = createEventController(eventService, this.logger);
+
+this.app.get(
+  "/events/new",
+  asyncHandler(async (req, res) => {
+    if (!this.requireAuthenticated(req, res)) {
+      return;
+    }
+    if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers and admins can create events.")) {
+      return;
+    }
+    eventController.renderCreateEventPage(res);
+  }),
+);
+
+this.app.post(
+  "/events/new",
+  asyncHandler(async (req, res) => {
+    if (!this.requireAuthenticated(req, res)) {
+      return;
+    }
+
+    if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers and admins can create events.")) {
+      return;
+    }
+
+    const { title, description, location, startDatetime, endDatetime, category, capacity } = req.body;
+
+    await eventController.create(
+      res,
+      touchAppSession(sessionStore(req)),
+      title,
+      description,
+      location,
+      new Date(startDatetime),
+      new Date(endDatetime),
+      category,
+      capacity ? parseInt(capacity) : undefined,
+    ); 
+  }),
+);
+
 
     // ── Error handler ────────────────────────────────────────────────
 
@@ -329,7 +389,8 @@ this.app.get(
 
 export function CreateApp(
   authController: IAuthController,
+  eventListController: IEventListController,
   logger: ILoggingService,
 ): IApp {
-  return new ExpressApp(authController, logger);
+  return new ExpressApp(authController, eventListController, logger);
 }

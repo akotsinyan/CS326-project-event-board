@@ -1,7 +1,10 @@
 import type { Request, Response } from "express";
 import type { IPastEventArchivingService } from "./PastEventArchivingService";
 import type { AppSessionStore } from "../../session/AppSession";
-import { getAuthenticatedUser, touchAppSession } from "../../session/AppSession";
+import {
+  getAuthenticatedUser,
+  touchAppSession,
+} from "../../session/AppSession";
 
 export interface IPastEventArchivingController {
   showArchive(req: Request, res: Response): Promise<void>;
