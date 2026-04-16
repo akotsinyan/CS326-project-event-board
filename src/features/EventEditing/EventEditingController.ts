@@ -1,7 +1,5 @@
-// src/features/EventEditing/EventEditingController.ts
-
 import type { Request, Response } from "express";
-import type { IEventEditingService } from "./EventEditingService";
+import type { IEventEditingService, EventEditingError } from "./EventEditingService";
 import type { AppSessionStore } from "../../session/AppSession";
 import { getAuthenticatedUser, touchAppSession } from "../../session/AppSession";
 
@@ -32,20 +30,31 @@ class EventEditingController implements IEventEditingController {
     );
 
     if (!result.ok) {
-      const error = result.value;
+      const error = result.value as EventEditingError;
+
       if (error.type === "EventNotFound") {
         res.status(404).render("partials/error", { message: "Event not found.", layout: false });
         return;
       }
       if (error.type === "Unauthorized") {
-        res.status(403).render("partials/error", { message: "You are not allowed to edit this event.", layout: false });
+        res.status(403).render("partials/error", {
+          message: "You are not allowed to edit this event.",
+          layout: false,
+        });
         return;
       }
       if (error.type === "InvalidState") {
-        res.status(400).render("partials/error", { message: error.message, layout: false });
+        res.status(400).render("partials/error", {
+          message: error.message,
+          layout: false,
+        });
         return;
       }
-      res.status(500).render("partials/error", { message: "Unexpected error.", layout: false });
+
+      res.status(500).render("partials/error", {
+        message: "Unexpected error.",
+        layout: false,
+      });
       return;
     }
 
@@ -68,21 +77,23 @@ class EventEditingController implements IEventEditingController {
 
     const eventId = typeof req.params.eventId === "string" ? req.params.eventId : "";
 
-    // Parse form fields — only include fields that were submitted
     const data = {
       title: typeof req.body.title === "string" ? req.body.title.trim() : undefined,
       description: typeof req.body.description === "string" ? req.body.description.trim() : undefined,
       location: typeof req.body.location === "string" ? req.body.location.trim() : undefined,
       category: typeof req.body.category === "string" ? req.body.category.trim() : undefined,
-      startDatetime: typeof req.body.startDatetime === "string" && req.body.startDatetime
-        ? new Date(req.body.startDatetime)
-        : undefined,
-      endDatetime: typeof req.body.endDatetime === "string" && req.body.endDatetime
-        ? new Date(req.body.endDatetime)
-        : undefined,
-      capacity: typeof req.body.capacity === "string" && req.body.capacity.trim() !== ""
-        ? Number(req.body.capacity)
-        : null,
+      startDatetime:
+        typeof req.body.startDatetime === "string" && req.body.startDatetime
+          ? new Date(req.body.startDatetime)
+          : undefined,
+      endDatetime:
+        typeof req.body.endDatetime === "string" && req.body.endDatetime
+          ? new Date(req.body.endDatetime)
+          : undefined,
+      capacity:
+        typeof req.body.capacity === "string" && req.body.capacity.trim() !== ""
+          ? Number(req.body.capacity)
+          : null,
     };
 
     const result = await this.service.updateEvent(
@@ -93,20 +104,27 @@ class EventEditingController implements IEventEditingController {
     );
 
     if (!result.ok) {
-      const error = result.value;
+      const error = result.value as EventEditingError;
 
       if (error.type === "EventNotFound") {
         res.status(404).render("partials/error", { message: "Event not found.", layout: false });
         return;
       }
+
       if (error.type === "Unauthorized") {
-        res.status(403).render("partials/error", { message: "You are not allowed to edit this event.", layout: false });
+        res.status(403).render("partials/error", {
+          message: "You are not allowed to edit this event.",
+          layout: false,
+        });
         return;
       }
 
-      // For InvalidState or InvalidInput — re-render the form with the error
-      // Fetch the event again to repopulate the form
-      const eventResult = await this.service.getEventForEdit(eventId, currentUser.userId, currentUser.role);
+      const eventResult = await this.service.getEventForEdit(
+        eventId,
+        currentUser.userId,
+        currentUser.role
+      );
+
       const event = eventResult.ok ? { ...eventResult.value, ...data } : data;
 
       res.status(400).render("events/edit", {

@@ -100,13 +100,22 @@ class InMemoryEventRepository implements IEventRepository {
     return Ok(event);
   }
 
+
   async findAll(): Promise<Result<IEvent[], EventError>> {
     return Ok([...this.events]);
   }
+  
+  async search(query: string): Promise<Result<IEvent[], EventError>> {
+    const results = this.events.filter(
+      (event) =>
+        event.title.includes(query) ||
+        event.description.includes(query) ||
+        event.location.includes(query)
+    );
+    return Ok(results);
+  }
 }
 
-export function CreateInMemoryEventRepository(): IEventRepository {
-  return new InMemoryEventRepository(SEED_EVENTS);
+export function createInMemoryEventRepository(): IEventRepository {
+  return new InMemoryEventRepository();
 }
-
-export default InMemoryEventRepository;

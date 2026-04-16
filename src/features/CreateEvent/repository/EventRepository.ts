@@ -15,5 +15,9 @@ export interface CreateEventInput {
 
 export interface IEventRepository {
   add(data: CreateEventInput): Promise<Result<IEvent, EventError>>;
+<<<<<<< task/rsvp-dashboard-service
   findAll(): Promise<Result<IEvent[], EventError>>;
+=======
+  search(query: string): Promise<Result<IEvent[], EventError>>;
+>>>>>>> dev
 }

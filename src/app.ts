@@ -3,6 +3,7 @@ import express, { Request, RequestHandler, Response } from "express";
 import session from "express-session";
 import Layouts from "express-ejs-layouts";
 import { IAuthController } from "./auth/AuthController";
+import type { IEventListController } from "./features/EventList/EventListController";
 import {
   AuthenticationRequired,
   AuthorizationRequired,
@@ -20,6 +21,18 @@ import { ILoggingService } from "./service/LoggingService";
 import { CreateInMemoryEventEditingRepository } from "./features/EventEditing/EventEditingRepository";
 import { CreateEventEditingService } from "./features/EventEditing/EventEditingService";
 import { CreateEventEditingController } from "./features/EventEditing/EventEditingController";
+import { CreateInMemoryRsvpToggleRepository } from "./features/RsvpToggle/RsvpToggleRepository";
+import { CreateRsvpToggleService } from "./features/RsvpToggle/RsvpToggleService";
+import { CreateRsvpToggleController } from "./features/RsvpToggle/RsvpToggleController";
+import { createInMemoryEventRepository } from "./features/CreateEvent/repository/InMemoryEventRepository";
+import { createEventService } from "./features/CreateEvent/service/EventService";
+import { createEventController } from "./features/CreateEvent/controller/EventController";
+import { CreateInMemoryEventDetailRepository } from "./features/EventDetailPage/EventDetailPageRepository";
+import { CreateEventDetailService } from "./features/EventDetailPage/EventDetailPageService";
+import { CreateEventDetailController } from "./features/EventDetailPage/EventDetailPageController";
+import { CreateInMemorySaveForLaterRepository } from "./features/SaveForLater/SaveForLaterRepo";
+import { CreateSaveForLaterService } from "./features/SaveForLater/SaveForLaterService";
+import { CreateSaveForLaterController } from "./features/SaveForLater/SaveForLaterController";
 
 type AsyncRequestHandler = RequestHandler;
 
@@ -38,6 +51,7 @@ class ExpressApp implements IApp {
 
   constructor(
     private readonly authController: IAuthController,
+    private readonly eventListController: IEventListController,
     private readonly logger: ILoggingService,
   ) {
     this.app = express();
@@ -255,6 +269,16 @@ class ExpressApp implements IApp {
         res.render("home", { session: browserSession, pageError: null });
       }),
     );
+    // ── Event List route ─────────────────────────────────────────────────
+
+    this.app.get(
+      "/events",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        await this.eventListController.showEventList(req, res);
+      }),
+    );
+
     // ── Event Editing routes ─────────────────────────────────────────────
 
 const eventEditingRepo = CreateInMemoryEventEditingRepository();
@@ -280,6 +304,117 @@ this.app.post(
     await eventEditingController.submitEditForm(req, res);
   }),
 );
+// ── RSVP Toggle routes ───────────────────────────────────────────────
+
+const rsvpToggleRepo = CreateInMemoryRsvpToggleRepository();
+const rsvpToggleService = CreateRsvpToggleService(rsvpToggleRepo, eventEditingRepo);
+const rsvpToggleController = CreateRsvpToggleController(rsvpToggleService);
+
+this.app.post(
+  "/events/:eventId/rsvp",
+  asyncHandler(async (req, res) => {
+    if (!this.requireAuthenticated(req, res)) {
+      return;
+    }
+    await rsvpToggleController.toggleRsvp(req, res);
+  }),
+);
+
+this.app.get(
+  "/events/:eventId/rsvp/status",
+  asyncHandler(async (req, res) => {
+    if (!this.requireAuthenticated(req, res)) {
+      return;
+    }
+    await rsvpToggleController.getRsvpStatus(req, res);
+  }),
+);
+
+// ── Save for Later routes ─────────────────────────────────────────────
+
+const saveForLaterRepo = CreateInMemorySaveForLaterRepository();
+const saveForLaterService = CreateSaveForLaterService(saveForLaterRepo);
+const saveForLaterController = CreateSaveForLaterController(saveForLaterService, this.logger);
+
+this.app.post(
+  "/events/:eventId/save",
+  asyncHandler(async (req, res) => {
+    if (!this.requireAuthenticated(req, res)) {
+      return;
+    }
+    await saveForLaterController.toggleFromButton(req, res);
+  }),
+);
+
+this.app.get(
+  "/saved",
+  asyncHandler(async (req, res) => {
+    if (!this.requireAuthenticated(req, res)) {
+      return;
+    }
+    await saveForLaterController.showSavedPage(req, res);
+  }),
+);
+
+// Event Creation Routes
+const eventRepository = createInMemoryEventRepository();
+const eventService = createEventService(eventRepository);
+const eventController = createEventController(eventService, this.logger);
+
+this.app.get(
+  "/events/new",
+  asyncHandler(async (req, res) => {
+    if (!this.requireAuthenticated(req, res)) {
+      return;
+    }
+    if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers and admins can create events.")) {
+      return;
+    }
+    eventController.renderCreateEventPage(res);
+  }),
+);
+
+this.app.post(
+  "/events/new",
+  asyncHandler(async (req, res) => {
+    if (!this.requireAuthenticated(req, res)) {
+      return;
+    }
+
+    if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers and admins can create events.")) {
+      return;
+    }
+
+    const { title, description, location, startDatetime, endDatetime, category, capacity } = req.body;
+
+    await eventController.create(
+      res,
+      touchAppSession(sessionStore(req)),
+      title,
+      description,
+      location,
+      new Date(startDatetime),
+      new Date(endDatetime),
+      category,
+      capacity ? parseInt(capacity) : undefined,
+    ); 
+  }),
+);
+
+// Event Search Route
+
+this.app.get(
+  "/events/search",
+  asyncHandler(async (req, res) => {
+    if (!this.requireAuthenticated(req, res)) {
+      return;
+    }
+
+    const query = typeof req.body.query === "string" ? req.body.query : "";
+    await eventController.search(res, query);
+   }),
+);
+
 
     // ── Error handler ────────────────────────────────────────────────
 
@@ -300,7 +435,8 @@ this.app.post(
 
 export function CreateApp(
   authController: IAuthController,
+  eventListController: IEventListController,
   logger: ILoggingService,
 ): IApp {
-  return new ExpressApp(authController, logger);
+  return new ExpressApp(authController, eventListController, logger);
 }

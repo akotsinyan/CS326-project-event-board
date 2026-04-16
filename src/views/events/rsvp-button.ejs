@@ -1,0 +1,38 @@
+<%# src/views/events/rsvp-button.ejs %>
+<%# Expected locals: eventId, rsvpStatus (null | "going" | "waitlisted") %>
+
+<div class="mt-4">
+  <% if (rsvpStatus === "going") { %>
+    <form method="POST" action="/events/<%= eventId %>/rsvp" class="inline">
+      <button
+        type="submit"
+        class="px-5 py-2.5 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 cursor-pointer"
+      >
+        ✓ Attending — Click to Cancel
+      </button>
+    </form>
+    <p class="text-sm text-slate-500 mt-1">You are currently attending this event.</p>
+
+  <% } else if (rsvpStatus === "waitlisted") { %>
+    <form method="POST" action="/events/<%= eventId %>/rsvp" class="inline">
+      <button
+        type="submit"
+        class="px-5 py-2.5 rounded-lg bg-yellow-500 text-white font-semibold hover:bg-yellow-600 cursor-pointer"
+      >
+        ⏳ Waitlisted — Click to Cancel
+      </button>
+    </form>
+    <p class="text-sm text-slate-500 mt-1">This event is full. You are on the waitlist.</p>
+
+  <% } else { %>
+    <form method="POST" action="/events/<%= eventId %>/rsvp" class="inline">
+      <button
+        type="submit"
+        class="px-5 py-2.5 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 cursor-pointer"
+      >
+        RSVP to this Event
+      </button>
+    </form>
+    <p class="text-sm text-slate-500 mt-1">Secure your spot now.</p>
+  <% } %>
+</div>
