@@ -27,6 +27,8 @@ import { CreateRsvpToggleController } from "./features/RsvpToggle/RsvpToggleCont
 import { createInMemoryEventRepository } from "./features/CreateEvent/repository/InMemoryEventRepository";
 import { createEventService } from "./features/CreateEvent/service/EventService";
 import { createEventController } from "./features/CreateEvent/controller/EventController";
+import { CreateEventPublishingService } from "./features/EventPublishing/EventPublishingService";
+import { CreateEventPublishingController } from "./features/EventPublishing/EventPublishingController";
 import { CreateInMemoryEventDetailRepository } from "./features/EventDetailPage/EventDetailPageRepository";
 import { CreateEventDetailService } from "./features/EventDetailPage/EventDetailPageService";
 import { CreateEventDetailController } from "./features/EventDetailPage/EventDetailPageController";
@@ -304,6 +306,31 @@ this.app.post(
     await eventEditingController.submitEditForm(req, res);
   }),
 );
+// ── Event Publishing routes ──────────────────────────────────────────
+
+const eventPublishingService = CreateEventPublishingService(eventEditingRepo);
+const eventPublishingController = CreateEventPublishingController(eventPublishingService);
+
+this.app.post(
+  "/events/:eventId/publish",
+  asyncHandler(async (req, res) => {
+    if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers and admins can publish events.")) {
+      return;
+    }
+    await eventPublishingController.publishEvent(req, res);
+  }),
+);
+
+this.app.post(
+  "/events/:eventId/cancel",
+  asyncHandler(async (req, res) => {
+    if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers and admins can cancel events.")) {
+      return;
+    }
+    await eventPublishingController.cancelEvent(req, res);
+  }),
+);
+
 // ── RSVP Toggle routes ───────────────────────────────────────────────
 
 const rsvpToggleRepo = CreateInMemoryRsvpToggleRepository();
