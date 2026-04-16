@@ -2,9 +2,9 @@ import type { Response, Request } from "express";
 import type { ISaveForLaterService } from "./SaveForLaterService";
 import type { ILoggingService } from "../../service/LoggingService";
 import type { SaveEventError } from "./errors";
-import { getAuthenticatedUser } from "../../session/AppSession";
+import { getAuthenticatedUser, touchAppSession } from "../../session/AppSession";
+import type { AppSessionStore, IAuthenticatedUserSession } from "../../session/AppSession";
 import type { IUserSummary } from "../../auth/User";
-import type { IAuthenticatedUserSession } from "../../session/AppSession";
 
 // ── Interface ────────────────────────────────────────
 
@@ -44,7 +44,7 @@ class SaveForLaterController implements ISaveForLaterController {
   }
 
   async toggleFromButton(req: Request, res: Response): Promise<void> {
-    const sessionUser = getAuthenticatedUser(req.session);
+    const sessionUser = getAuthenticatedUser(req.session as AppSessionStore);
     const user = mapSessionToUser(sessionUser);
 
     const eventId =
@@ -73,7 +73,9 @@ class SaveForLaterController implements ISaveForLaterController {
   }
 
   async showSavedPage(req: Request, res: Response): Promise<void> {
-    const sessionUser = getAuthenticatedUser(req.session);
+    const store = req.session as AppSessionStore;
+    const session = touchAppSession(store);
+    const sessionUser = getAuthenticatedUser(store);
     const user = mapSessionToUser(sessionUser);
 
     const result = await this.service.listSaved(user);
@@ -82,14 +84,16 @@ class SaveForLaterController implements ISaveForLaterController {
       const error = result.value as SaveEventError;
       this.logger.warn(`Load saved events failed: ${error.message}`);
       res.status(this.mapErrorStatus(error)).render("saved/index", {
-        savedEvents: [],
+        session,
+        events: [],
         pageError: error.message,
       });
       return;
     }
 
     res.render("saved/index", {
-      savedEvents: result.value,
+      session,
+      events: result.value,
       pageError: null,
     });
   }

@@ -26,10 +26,8 @@ class PastEventArchivingController implements IPastEventArchivingController {
     const result = await this.service.getArchivedEvents();
 
     if (!result.ok) {
-      res.status(500).render("partials/error", {
-        message: result.value.message,
-        layout: false,
-      });
+      const err = result.value as { message: string };
+      res.status(500).render("partials/error", { message: err.message, layout: false });
       return;
     }
 

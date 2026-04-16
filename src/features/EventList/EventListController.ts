@@ -22,8 +22,12 @@ class EventListController implements IEventListController {
       return;
     }
 
-    const rawCategory = typeof req.query.category === "string" ? req.query.category.trim() : undefined;
-    const rawTimeframe = typeof req.query.timeframe === "string" ? req.query.timeframe.trim() : undefined;
+    const rawCategory =
+      typeof req.query.category === "string" ? req.query.category.trim() : undefined;
+    const rawTimeframe =
+      typeof req.query.timeframe === "string" ? req.query.timeframe.trim() : undefined;
+    const rawQuery =
+      typeof req.query.q === "string" ? req.query.q.trim() : undefined;
 
     const timeframe: Timeframe | undefined =
       rawTimeframe && VALID_TIMEFRAMES.includes(rawTimeframe as Timeframe)
@@ -33,6 +37,7 @@ class EventListController implements IEventListController {
     const filter: EventListFilter = {
       category: rawCategory || undefined,
       timeframe,
+      query: rawQuery || undefined,
     };
 
     const result = await this.service.getFilteredEvents(filter);
@@ -43,12 +48,23 @@ class EventListController implements IEventListController {
       return;
     }
 
+    const isHtmx = req.get("HX-Request") === "true";
+
+    if (isHtmx) {
+      res.render("events/partials/eventList", {
+        events: result.value,
+        layout: false,
+      });
+      return;
+    }
+
     res.render("events/index", {
       session,
       events: result.value,
       filter: {
         category: rawCategory ?? "",
         timeframe: rawTimeframe ?? "all",
+        query: rawQuery ?? "",
       },
     });
   }

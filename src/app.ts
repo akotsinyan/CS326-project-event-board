@@ -2,15 +2,19 @@ import path from "node:path";
 import express, { Request, RequestHandler, Response } from "express";
 import session from "express-session";
 import Layouts from "express-ejs-layouts";
-import { IAuthController } from "./auth/AuthController";
+import type { IAuthController } from "./auth/AuthController";
 import type { IEventListController } from "./features/EventList/EventListController";
+import type { IEventEditingController } from "./features/EventEditing/EventEditingController";
+import type { IEventPublishingController } from "./features/EventPublishing/EventPublishingController";
+import type { IEventDetailController } from "./features/EventDetailPage/EventDetailPageController";
+import type { IPastEventArchivingController } from "./features/PastEventArchiving/PastEventArchivingController";
+import type { IRsvpToggleController } from "./features/RsvpToggle/RsvpToggleController";
 import type { IRSVPDashboardController } from "./features/RSVPDashboard/RSVPDashboardController";
-import {
-  AuthenticationRequired,
-  AuthorizationRequired,
-} from "./auth/errors";
+import type { IEventController } from "./features/CreateEvent/controller/EventController";
+import type { ISaveForLaterController } from "./features/SaveForLater/SaveForLaterController";
+import { AuthenticationRequired, AuthorizationRequired } from "./auth/errors";
 import type { UserRole } from "./auth/User";
-import { IApp } from "./contracts";
+import type { IApp } from "./contracts";
 import {
   getAuthenticatedUser,
   isAuthenticatedSession,
@@ -18,24 +22,7 @@ import {
   recordPageView,
   touchAppSession,
 } from "./session/AppSession";
-import { ILoggingService } from "./service/LoggingService";
-import { CreateInMemoryEventEditingRepository } from "./features/EventEditing/EventEditingRepository";
-import { CreateEventEditingService } from "./features/EventEditing/EventEditingService";
-import { CreateEventEditingController } from "./features/EventEditing/EventEditingController";
-import { CreateInMemoryRsvpToggleRepository } from "./features/RsvpToggle/RsvpToggleRepository";
-import { CreateRsvpToggleService } from "./features/RsvpToggle/RsvpToggleService";
-import { CreateRsvpToggleController } from "./features/RsvpToggle/RsvpToggleController";
-import { createInMemoryEventRepository } from "./features/CreateEvent/repository/InMemoryEventRepository";
-import { createEventService } from "./features/CreateEvent/service/EventService";
-import { createEventController } from "./features/CreateEvent/controller/EventController";
-import { CreateEventPublishingService } from "./features/EventPublishing/EventPublishingService";
-import { CreateEventPublishingController } from "./features/EventPublishing/EventPublishingController";
-import { CreateInMemoryEventDetailRepository } from "./features/EventDetailPage/EventDetailPageRepository";
-import { CreateEventDetailService } from "./features/EventDetailPage/EventDetailPageService";
-import { CreateEventDetailController } from "./features/EventDetailPage/EventDetailPageController";
-import { CreateInMemorySaveForLaterRepository } from "./features/SaveForLater/SaveForLaterRepo";
-import { CreateSaveForLaterService } from "./features/SaveForLater/SaveForLaterService";
-import { CreateSaveForLaterController } from "./features/SaveForLater/SaveForLaterController";
+import type { ILoggingService } from "./service/LoggingService";
 
 type AsyncRequestHandler = RequestHandler;
 
@@ -55,7 +42,14 @@ class ExpressApp implements IApp {
   constructor(
     private readonly authController: IAuthController,
     private readonly eventListController: IEventListController,
+    private readonly eventEditingController: IEventEditingController,
+    private readonly eventPublishingController: IEventPublishingController,
+    private readonly eventDetailController: IEventDetailController,
+    private readonly pastArchivingController: IPastEventArchivingController,
+    private readonly rsvpToggleController: IRsvpToggleController,
     private readonly rsvpDashboardController: IRSVPDashboardController,
+    private readonly createEventController: IEventController,
+    private readonly saveForLaterController: ISaveForLaterController,
     private readonly logger: ILoggingService,
   ) {
     this.app = express();
@@ -65,7 +59,6 @@ class ExpressApp implements IApp {
   }
 
   private registerMiddleware(): void {
-    // Serve static files from src/static (create this directory to add your own assets)
     this.app.use(express.static(path.join(process.cwd(), "src/static")));
     this.app.use(
       session({
@@ -73,10 +66,7 @@ class ExpressApp implements IApp {
         secret: process.env.SESSION_SECRET ?? "project-starter-demo-secret",
         resave: false,
         saveUninitialized: false,
-        cookie: {
-          httpOnly: true,
-          sameSite: "lax",
-        },
+        cookie: { httpOnly: true, sameSite: "lax" },
       }),
     );
     this.app.use(Layouts);
@@ -93,17 +83,11 @@ class ExpressApp implements IApp {
     return req.get("HX-Request") === "true";
   }
 
-  /**
-   * Middleware helper: returns true if the request is from an authenticated user.
-   * If the user is not authenticated, it handles the response (redirect or 401).
-   */
   private requireAuthenticated(req: Request, res: Response): boolean {
     const store = sessionStore(req);
     touchAppSession(store);
 
-    if (getAuthenticatedUser(store)) {
-      return true;
-    }
+    if (getAuthenticatedUser(store)) return true;
 
     this.logger.warn("Blocked unauthenticated request to a protected route");
     if (this.isHtmxRequest(req) || req.method !== "GET") {
@@ -118,29 +102,13 @@ class ExpressApp implements IApp {
     return false;
   }
 
-  /**
-   * Middleware helper: returns true if the authenticated user has one of the
-   * allowed roles. Calls requireAuthenticated first, so unauthenticated
-   * requests are handled automatically.
-   */
-  private requireRole(
-    req: Request,
-    res: Response,
-    allowedRoles: UserRole[],
-    message: string,
-  ): boolean {
-    if (!this.requireAuthenticated(req, res)) {
-      return false;
-    }
+  private requireRole(req: Request, res: Response, allowedRoles: UserRole[], message: string): boolean {
+    if (!this.requireAuthenticated(req, res)) return false;
 
     const currentUser = getAuthenticatedUser(sessionStore(req));
-    if (currentUser && allowedRoles.includes(currentUser.role)) {
-      return true;
-    }
+    if (currentUser && allowedRoles.includes(currentUser.role)) return true;
 
-    this.logger.warn(
-      `Blocked unauthorized request for role ${currentUser?.role ?? "unknown"}`,
-    );
+    this.logger.warn(`Blocked unauthorized request for role ${currentUser?.role ?? "unknown"}`);
     res.status(403).render("partials/error", {
       message: AuthorizationRequired(message).message,
       layout: false,
@@ -149,321 +117,168 @@ class ExpressApp implements IApp {
   }
 
   private registerRoutes(): void {
-    // ── Public routes ────────────────────────────────────────────────
+    // ── Public routes ────────────────────────────────────────────────────────
 
-    this.app.get(
-      "/",
-      asyncHandler(async (req, res) => {
-        this.logger.info("GET /");
-        const store = sessionStore(req);
-        res.redirect(isAuthenticatedSession(store) ? "/home" : "/login");
-      }),
-    );
+    this.app.get("/", asyncHandler(async (req, res) => {
+      this.logger.info("GET /");
+      res.redirect(isAuthenticatedSession(sessionStore(req)) ? "/home" : "/login");
+    }));
 
-    this.app.get(
-      "/login",
-      asyncHandler(async (req, res) => {
-        const store = sessionStore(req);
-        const browserSession = recordPageView(store);
+    this.app.get("/login", asyncHandler(async (req, res) => {
+      const store = sessionStore(req);
+      if (getAuthenticatedUser(store)) { res.redirect("/home"); return; }
+      await this.authController.showLogin(res, recordPageView(store));
+    }));
 
-        if (getAuthenticatedUser(store)) {
-          res.redirect("/home");
-          return;
-        }
+    this.app.post("/login", asyncHandler(async (req, res) => {
+      const email = typeof req.body.email === "string" ? req.body.email : "";
+      const password = typeof req.body.password === "string" ? req.body.password : "";
+      await this.authController.loginFromForm(res, email, password, sessionStore(req));
+    }));
 
-        await this.authController.showLogin(res, browserSession);
-      }),
-    );
+    this.app.post("/logout", asyncHandler(async (req, res) => {
+      await this.authController.logoutFromForm(res, sessionStore(req));
+    }));
 
-    this.app.post(
-      "/login",
-      asyncHandler(async (req, res) => {
-        const email = typeof req.body.email === "string" ? req.body.email : "";
-        const password = typeof req.body.password === "string" ? req.body.password : "";
-        await this.authController.loginFromForm(res, email, password, sessionStore(req));
-      }),
-    );
+    // ── Admin routes ─────────────────────────────────────────────────────────
 
-    this.app.post(
-      "/logout",
-      asyncHandler(async (req, res) => {
-        await this.authController.logoutFromForm(res, sessionStore(req));
-      }),
-    );
+    this.app.get("/admin/users", asyncHandler(async (req, res) => {
+      if (!this.requireRole(req, res, ["admin"], "Only admins can manage users.")) return;
+      await this.authController.showAdminUsers(res, recordPageView(sessionStore(req)));
+    }));
 
-    // ── Admin routes ─────────────────────────────────────────────────
+    this.app.post("/admin/users", asyncHandler(async (req, res) => {
+      if (!this.requireRole(req, res, ["admin"], "Only admins can manage users.")) return;
+      const roleValue = typeof req.body.role === "string" ? req.body.role : "user";
+      const role: UserRole =
+        roleValue === "admin" || roleValue === "staff" || roleValue === "user" ? roleValue : "user";
+      await this.authController.createUserFromForm(
+        res,
+        {
+          email: typeof req.body.email === "string" ? req.body.email : "",
+          displayName: typeof req.body.displayName === "string" ? req.body.displayName : "",
+          password: typeof req.body.password === "string" ? req.body.password : "",
+          role,
+        },
+        touchAppSession(sessionStore(req)),
+      );
+    }));
 
-    this.app.get(
-      "/admin/users",
-      asyncHandler(async (req, res) => {
-        if (!this.requireRole(req, res, ["admin"], "Only Admin can manage users.")) {
-          return;
-        }
+    this.app.post("/admin/users/:id/delete", asyncHandler(async (req, res) => {
+      if (!this.requireRole(req, res, ["admin"], "Only admins can manage users.")) return;
+      const currentUser = getAuthenticatedUser(sessionStore(req));
+      if (!currentUser) { res.status(401).render("partials/error", { message: "Please log in.", layout: false }); return; }
+      await this.authController.deleteUserFromForm(
+        res,
+        typeof req.params.id === "string" ? req.params.id : "",
+        currentUser.userId,
+        touchAppSession(sessionStore(req)),
+      );
+    }));
 
-        const browserSession = recordPageView(sessionStore(req));
-        await this.authController.showAdminUsers(res, browserSession);
-      }),
-    );
+    // ── Authenticated home ────────────────────────────────────────────────────
 
-    this.app.post(
-      "/admin/users",
-      asyncHandler(async (req, res) => {
-        if (!this.requireRole(req, res, ["admin"], "Only Admin can manage users.")) {
-          return;
-        }
+    this.app.get("/home", asyncHandler(async (req, res) => {
+      if (!this.requireAuthenticated(req, res)) return;
+      const browserSession = recordPageView(sessionStore(req));
+      this.logger.info(`GET /home for ${browserSession.browserLabel}`);
+      res.render("home", { session: browserSession, pageError: null });
+    }));
 
-        const roleValue = typeof req.body.role === "string" ? req.body.role : "user";
-        const role: UserRole =
-          roleValue === "admin" || roleValue === "staff" || roleValue === "user"
-            ? roleValue
-            : "user";
+    // ── Event list & search ───────────────────────────────────────────────────
 
-        await this.authController.createUserFromForm(
-          res,
-          {
-            email: typeof req.body.email === "string" ? req.body.email : "",
-            displayName:
-              typeof req.body.displayName === "string" ? req.body.displayName : "",
-            password: typeof req.body.password === "string" ? req.body.password : "",
-            role,
-          },
-          touchAppSession(sessionStore(req)),
-        );
-      }),
-    );
+    this.app.get("/events", asyncHandler(async (req, res) => {
+      if (!this.requireAuthenticated(req, res)) return;
+      await this.eventListController.showEventList(req, res);
+    }));
 
-    this.app.post(
-      "/admin/users/:id/delete",
-      asyncHandler(async (req, res) => {
-        if (!this.requireRole(req, res, ["admin"], "Only Admin can manage users.")) {
-          return;
-        }
+    // ── Event creation (must come before /events/:eventId) ────────────────────
 
-        const session = touchAppSession(sessionStore(req));
-        const currentUser = getAuthenticatedUser(sessionStore(req));
-        if (!currentUser) {
-          res.status(401).render("partials/error", {
-            message: AuthenticationRequired("Please log in to continue.").message,
-            layout: false,
-          });
-          return;
-        }
+    this.app.get("/events/new", asyncHandler(async (req, res) => {
+      if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers and admins can create events.")) return;
+      this.createEventController.renderCreateEventPage(req, res);
+    }));
 
-        await this.authController.deleteUserFromForm(
-          res,
-          typeof req.params.id === "string" ? req.params.id : "",
-          currentUser.userId,
-          session,
-        );
-      }),
-    );
+    this.app.post("/events/new", asyncHandler(async (req, res) => {
+      if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers and admins can create events.")) return;
+      await this.createEventController.create(req, res, touchAppSession(sessionStore(req)));
+    }));
 
-    // ── Authenticated home page ──────────────────────────────────────
-    // TODO: Replace this placeholder with your project's main page.
+    // ── Past event archive (must come before /events/:eventId) ───────────────
 
-    this.app.get(
-      "/home",
-      asyncHandler(async (req, res) => {
-        if (!this.requireAuthenticated(req, res)) {
-          return;
-        }
+    this.app.get("/events/archive", asyncHandler(async (req, res) => {
+      if (!this.requireAuthenticated(req, res)) return;
+      await this.pastArchivingController.showArchive(req, res);
+    }));
 
-        const browserSession = recordPageView(sessionStore(req));
-        this.logger.info(`GET /home for ${browserSession.browserLabel}`);
-        res.render("home", { session: browserSession, pageError: null });
-      }),
-    );
-    // ── Event List route ─────────────────────────────────────────────────
+    // ── Event detail (parameterized — must come after specific routes) ────────
 
-    this.app.get(
-      "/events",
-      asyncHandler(async (req, res) => {
-        if (!this.requireAuthenticated(req, res)) return;
-        await this.eventListController.showEventList(req, res);
-      }),
-    );
+    this.app.get("/events/:eventId", asyncHandler(async (req, res) => {
+      if (!this.requireAuthenticated(req, res)) return;
+      await this.eventDetailController.showEvent(req, res);
+    }));
 
-    // ── RSVP Dashboard route ──────────────────────────────────────────────
+    // ── Event editing ─────────────────────────────────────────────────────────
 
-    this.app.get(
-      "/rsvps/dashboard",
-      asyncHandler(async (req, res) => {
-        if (!this.requireRole(req, res, ["user"], "Only members can view the RSVP dashboard.")) return;
-        await this.rsvpDashboardController.showDashboard(req, res);
-      }),
-    );
+    this.app.get("/events/:eventId/edit", asyncHandler(async (req, res) => {
+      if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers and admins can edit events.")) return;
+      await this.eventEditingController.showEditForm(req, res);
+    }));
 
-    // ── Event Editing routes ─────────────────────────────────────────────
+    this.app.post("/events/:eventId/edit", asyncHandler(async (req, res) => {
+      if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers and admins can edit events.")) return;
+      await this.eventEditingController.submitEditForm(req, res);
+    }));
 
-const eventEditingRepo = CreateInMemoryEventEditingRepository();
-const eventEditingService = CreateEventEditingService(eventEditingRepo);
-const eventEditingController = CreateEventEditingController(eventEditingService);
+    // ── Event publishing / cancellation ───────────────────────────────────────
 
-this.app.get(
-  "/events/:eventId/edit",
-  asyncHandler(async (req, res) => {
-    if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers and admins can edit events.")) {
-      return;
-    }
-    await eventEditingController.showEditForm(req, res);
-  }),
-);
+    this.app.post("/events/:eventId/publish", asyncHandler(async (req, res) => {
+      if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers and admins can publish events.")) return;
+      await this.eventPublishingController.publishEvent(req, res);
+    }));
 
-this.app.post(
-  "/events/:eventId/edit",
-  asyncHandler(async (req, res) => {
-    if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers and admins can edit events.")) {
-      return;
-    }
-    await eventEditingController.submitEditForm(req, res);
-  }),
-);
-// ── Event Publishing routes ──────────────────────────────────────────
+    this.app.post("/events/:eventId/cancel", asyncHandler(async (req, res) => {
+      if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers and admins can cancel events.")) return;
+      await this.eventPublishingController.cancelEvent(req, res);
+    }));
 
-const eventPublishingService = CreateEventPublishingService(eventEditingRepo);
-const eventPublishingController = CreateEventPublishingController(eventPublishingService);
+    // ── RSVP toggle ───────────────────────────────────────────────────────────
 
-this.app.post(
-  "/events/:eventId/publish",
-  asyncHandler(async (req, res) => {
-    if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers and admins can publish events.")) {
-      return;
-    }
-    await eventPublishingController.publishEvent(req, res);
-  }),
-);
+    this.app.post("/events/:eventId/rsvp", asyncHandler(async (req, res) => {
+      if (!this.requireAuthenticated(req, res)) return;
+      await this.rsvpToggleController.toggleRsvp(req, res);
+    }));
 
-this.app.post(
-  "/events/:eventId/cancel",
-  asyncHandler(async (req, res) => {
-    if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers and admins can cancel events.")) {
-      return;
-    }
-    await eventPublishingController.cancelEvent(req, res);
-  }),
-);
+    this.app.get("/events/:eventId/rsvp/status", asyncHandler(async (req, res) => {
+      if (!this.requireAuthenticated(req, res)) return;
+      await this.rsvpToggleController.getRsvpStatus(req, res);
+    }));
 
-// ── RSVP Toggle routes ───────────────────────────────────────────────
+    // ── Save for later ────────────────────────────────────────────────────────
 
-const rsvpToggleRepo = CreateInMemoryRsvpToggleRepository();
-const rsvpToggleService = CreateRsvpToggleService(rsvpToggleRepo, eventEditingRepo);
-const rsvpToggleController = CreateRsvpToggleController(rsvpToggleService);
+    this.app.post("/events/:eventId/save", asyncHandler(async (req, res) => {
+      if (!this.requireAuthenticated(req, res)) return;
+      await this.saveForLaterController.toggleFromButton(req, res);
+    }));
 
-this.app.post(
-  "/events/:eventId/rsvp",
-  asyncHandler(async (req, res) => {
-    if (!this.requireAuthenticated(req, res)) {
-      return;
-    }
-    await rsvpToggleController.toggleRsvp(req, res);
-  }),
-);
+    this.app.get("/saved", asyncHandler(async (req, res) => {
+      if (!this.requireAuthenticated(req, res)) return;
+      await this.saveForLaterController.showSavedPage(req, res);
+    }));
 
-this.app.get(
-  "/events/:eventId/rsvp/status",
-  asyncHandler(async (req, res) => {
-    if (!this.requireAuthenticated(req, res)) {
-      return;
-    }
-    await rsvpToggleController.getRsvpStatus(req, res);
-  }),
-);
+    // ── RSVP dashboard ────────────────────────────────────────────────────────
 
-// ── Save for Later routes ─────────────────────────────────────────────
+    this.app.get("/rsvps/dashboard", asyncHandler(async (req, res) => {
+      if (!this.requireRole(req, res, ["user"], "Only members can view the RSVP dashboard.")) return;
+      await this.rsvpDashboardController.showDashboard(req, res);
+    }));
 
-const saveForLaterRepo = CreateInMemorySaveForLaterRepository();
-const saveForLaterService = CreateSaveForLaterService(saveForLaterRepo);
-const saveForLaterController = CreateSaveForLaterController(saveForLaterService, this.logger);
-
-this.app.post(
-  "/events/:eventId/save",
-  asyncHandler(async (req, res) => {
-    if (!this.requireAuthenticated(req, res)) {
-      return;
-    }
-    await saveForLaterController.toggleFromButton(req, res);
-  }),
-);
-
-this.app.get(
-  "/saved",
-  asyncHandler(async (req, res) => {
-    if (!this.requireAuthenticated(req, res)) {
-      return;
-    }
-    await saveForLaterController.showSavedPage(req, res);
-  }),
-);
-
-// Event Creation Routes
-const eventRepository = createInMemoryEventRepository();
-const eventService = createEventService(eventRepository);
-const eventController = createEventController(eventService, this.logger);
-
-this.app.get(
-  "/events/new",
-  asyncHandler(async (req, res) => {
-    if (!this.requireAuthenticated(req, res)) {
-      return;
-    }
-    if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers and admins can create events.")) {
-      return;
-    }
-    eventController.renderCreateEventPage(res);
-  }),
-);
-
-this.app.post(
-  "/events/new",
-  asyncHandler(async (req, res) => {
-    if (!this.requireAuthenticated(req, res)) {
-      return;
-    }
-
-    if (!this.requireRole(req, res, ["admin", "staff"], "Only organizers and admins can create events.")) {
-      return;
-    }
-
-    const { title, description, location, startDatetime, endDatetime, category, capacity } = req.body;
-
-    await eventController.create(
-      res,
-      touchAppSession(sessionStore(req)),
-      title,
-      description,
-      location,
-      new Date(startDatetime),
-      new Date(endDatetime),
-      category,
-      capacity ? parseInt(capacity) : undefined,
-    ); 
-  }),
-);
-
-// Event Search Route
-
-this.app.get(
-  "/events/search",
-  asyncHandler(async (req, res) => {
-    if (!this.requireAuthenticated(req, res)) {
-      return;
-    }
-
-    const query = typeof req.body.query === "string" ? req.body.query : "";
-    await eventController.search(res, query);
-   }),
-);
-
-
-    // ── Error handler ────────────────────────────────────────────────
+    // ── Error handler ─────────────────────────────────────────────────────────
 
     this.app.use((err: unknown, _req: Request, res: Response, _next: (value?: unknown) => void) => {
       const message = err instanceof Error ? err.message : "Unexpected server error.";
       this.logger.error(message);
-      res.status(500).render("partials/error", {
-        message: "Unexpected server error.",
-        layout: false,
-      });
+      res.status(500).render("partials/error", { message: "Unexpected server error.", layout: false });
     });
   }
 
@@ -475,8 +290,27 @@ this.app.get(
 export function CreateApp(
   authController: IAuthController,
   eventListController: IEventListController,
+  eventEditingController: IEventEditingController,
+  eventPublishingController: IEventPublishingController,
+  eventDetailController: IEventDetailController,
+  pastArchivingController: IPastEventArchivingController,
+  rsvpToggleController: IRsvpToggleController,
   rsvpDashboardController: IRSVPDashboardController,
+  createEventController: IEventController,
+  saveForLaterController: ISaveForLaterController,
   logger: ILoggingService,
 ): IApp {
-  return new ExpressApp(authController, eventListController, rsvpDashboardController, logger);
+  return new ExpressApp(
+    authController,
+    eventListController,
+    eventEditingController,
+    eventPublishingController,
+    eventDetailController,
+    pastArchivingController,
+    rsvpToggleController,
+    rsvpDashboardController,
+    createEventController,
+    saveForLaterController,
+    logger,
+  );
 }

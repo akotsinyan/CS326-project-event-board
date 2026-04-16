@@ -1,26 +1,13 @@
-import { Response } from "express";
-import { IAppBrowserSession } from "../../../session/AppSession";
-import { IEventService } from "../service/EventService";
-import { ILoggingService } from "../../../service/LoggingService";
-import { EventError } from "../repository/error";
+import type { Request, Response } from "express";
+import type { IAppBrowserSession, AppSessionStore } from "../../../session/AppSession";
+import { getAuthenticatedUser, touchAppSession } from "../../../session/AppSession";
+import type { IEventService, EventError } from "../service/EventService";
+import type { ILoggingService } from "../../../service/LoggingService";
 
 export interface IEventController {
-  renderCreateEventPage(res: Response, pageError?: string): void;
-  create(
-    res: Response,
-    session: IAppBrowserSession,
-    title: string,
-    description: string,
-    location: string,
-    startDatetime: Date,
-    endDatetime: Date,
-    category?: string,
-    capacity?: number,
-  ): Promise<void>;
-  search(
-    res: Response,
-    query: string,
-  ): Promise<void>;
+  renderCreateEventPage(req: Request, res: Response, pageError?: string): void;
+  create(req: Request, res: Response, session: IAppBrowserSession): Promise<void>;
+  search(req: Request, res: Response): Promise<void>;
 }
 
 class EventController implements IEventController {
@@ -30,82 +17,53 @@ class EventController implements IEventController {
   ) {}
 
   private mapErrorStatus(error: EventError): number {
-    if (error.name === "ValidationError") {
-      return 400;
-    }
-    return 500;
+    return error.name === "ValidationError" ? 400 : 500;
   }
 
-  private getUserId(session: IAppBrowserSession): string {
-    return session.authenticatedUser?.userId ?? "";
+  renderCreateEventPage(req: Request, res: Response, pageError?: string): void {
+    const session = touchAppSession(req.session as AppSessionStore);
+    res.render("events/new", { session, pageError: pageError ?? null, formValues: null });
   }
 
-  private handleError(purpose: string, error: any): {status: number; message: string} {
-    if (error.name && error.message) {
-      const status = this.mapErrorStatus(error);
-      const log = status >= 500 ? this.logger.error : this.logger.warn;
-      log.call(this.logger, `${purpose} failed: ${error.message}`);
-      return { status, message: error.message };
-    }
-
-    this.logger.error(`${purpose} failed with unknown error: ${error}`);
-    return { status: 500, message: "An unexpected error occurred. Please try again later." };
-  }
-
-  renderCreateEventPage(res: Response, pageError?: string): void {
-    res.render("/events/new", { pageError });
-  }
-
-  async create(
-    res: Response,
-    session: IAppBrowserSession,
-    title: string,
-    description: string,
-    location: string,
-    startDatetime: Date,
-    endDatetime: Date,
-    category?: string,
-    capacity?: number,
-  ): Promise<void> {
-    const organizerId = this.getUserId(session);
+  async create(req: Request, res: Response, session: IAppBrowserSession): Promise<void> {
+    const { title, description, location, startDatetime, endDatetime, category, capacity } = req.body;
+    const organizerId = session.authenticatedUser?.userId ?? "";
+    const organizerName = session.authenticatedUser?.displayName ?? "";
 
     const result = await this.service.createEvent({
-      title,
-      description,
-      location,
-      startDatetime,
-      endDatetime,
-      category,
-      capacity,
+      title: typeof title === "string" ? title : "",
+      description: typeof description === "string" ? description : "",
+      location: typeof location === "string" ? location : "",
+      startDatetime: new Date(startDatetime),
+      endDatetime: new Date(endDatetime),
       organizerId,
+      organizerName,
+      category: typeof category === "string" ? category : undefined,
+      capacity: capacity ? parseInt(capacity, 10) : null,
     });
 
     if (!result.ok) {
-      const { status, message } = this.handleError("Create event", result.value);
-      res.status(status).render("events/new", { pageError: message });
+      const error = result.value as EventError;
+      const status = this.mapErrorStatus(error);
+      this.logger.warn(`Create event failed: ${error.message}`);
+      res.status(status).render("events/new", {
+        session,
+        pageError: error.message,
+        formValues: req.body,
+      });
       return;
     }
 
-    const event = result.value;
-    this.logger.info(`Event created successfully: ${event.id}`);
-    res.render("/home", { session });
+    this.logger.info(`Event created: ${result.value.id}`);
+    res.redirect(`/events/${result.value.id}`);
   }
 
-  async search(
-    res: Response,
-    query: string,
-  ): Promise<void> {
-    const result = await this.service.searchEvents(query);
+  async search(req: Request, res: Response): Promise<void> {
+    const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    this.logger.info(`Event search: "${query}"`);
 
-    if (!result.ok) {
-      const { status, message } = this.handleError("Search events", result.value);
-      res.status(status).render("partials/error", { message });
-      return;
-    }
-
-    const events = result.value;
-    this.logger.info(`Events searched successfully: ${events.length}`);
-    res.render("events/index", { events });
+    // Delegate to the event list with a search filter; renders the same index view.
+    res.redirect(`/events?q=${encodeURIComponent(query)}`);
   }
 }
 

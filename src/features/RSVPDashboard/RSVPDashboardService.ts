@@ -1,15 +1,14 @@
 import { Ok, Err, type Result } from "../../lib/result";
 import type { IEvent } from "../CreateEvent/model/event";
-import type { IRSVP } from "./model/rsvp";
-import type { IRSVPRepository, RSVPRepoError } from "./repository/RSVPRepository";
-import type { IEventRepository } from "../CreateEvent/repository/EventRepository";
+import type { IRsvpToggleRepository, IRsvp } from "../RsvpToggle/RsvpToggleRepository";
+import type { IEventEditingRepository } from "../EventEditing/EventEditingRepository";
 
 // ── Output types ──────────────────────────────────────────────────────────────
 
 export interface RSVPDashboardEntry {
   rsvpId: string;
   eventId: string;
-  status: IRSVP["status"];
+  rsvpStatus: IRsvp["status"];
   eventTitle: string;
   eventCategory: string;
   eventLocation: string;
@@ -39,17 +38,17 @@ export interface IRSVPDashboardService {
 
 function isUpcoming(entry: RSVPDashboardEntry, now: Date): boolean {
   return (
-    (entry.status === "attending" || entry.status === "waitlisted") &&
+    (entry.rsvpStatus === "going" || entry.rsvpStatus === "waitlisted") &&
     entry.eventStartDatetime > now &&
     entry.eventStatus !== "cancelled"
   );
 }
 
-function toEntry(rsvp: IRSVP, event: IEvent): RSVPDashboardEntry {
+function toEntry(rsvp: IRsvp, event: IEvent): RSVPDashboardEntry {
   return {
     rsvpId: rsvp.id,
     eventId: event.id,
-    status: rsvp.status,
+    rsvpStatus: rsvp.status,
     eventTitle: event.title,
     eventCategory: event.category,
     eventLocation: event.location,
@@ -64,7 +63,7 @@ function toEntry(rsvp: IRSVP, event: IEvent): RSVPDashboardEntry {
 class RSVPDashboardService implements IRSVPDashboardService {
   constructor(
     private readonly rsvpRepo: IRsvpToggleRepository,
-    private readonly eventRepo: IEventListRepository
+    private readonly eventRepo: IEventEditingRepository,
   ) {}
 
   async getDashboard(userId: string, userRole: string): Promise<Result<RSVPDashboard, RSVPDashboardError>> {
@@ -109,7 +108,7 @@ class RSVPDashboardService implements IRSVPDashboardService {
 
 export function CreateRSVPDashboardService(
   rsvpRepo: IRsvpToggleRepository,
-  eventRepo: IEventListRepository
+  eventRepo: IEventEditingRepository,
 ): IRSVPDashboardService {
   return new RSVPDashboardService(rsvpRepo, eventRepo);
 }
