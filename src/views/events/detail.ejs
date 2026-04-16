@@ -95,8 +95,14 @@
 
     <!-- RSVP Button -->
     <% if (canRsvp) { %>
-      <div class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg">
+      <div class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg mb-6">
         <%- include("./rsvp-button", { eventId: event.id, rsvpStatus: null }) %>
+      </div>
+    <% } %>
+
+    <% if (canSave) { %>
+      <div class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg">
+        <%- include("./partials/saveButton", { eventId: event.id, state: "unsaved" }) %>
       </div>
     <% } %>
   </div>

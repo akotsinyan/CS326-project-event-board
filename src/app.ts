@@ -29,6 +29,12 @@ import { createEventService } from "./features/CreateEvent/service/EventService"
 import { createEventController } from "./features/CreateEvent/controller/EventController";
 import { CreateEventPublishingService } from "./features/EventPublishing/EventPublishingService";
 import { CreateEventPublishingController } from "./features/EventPublishing/EventPublishingController";
+import { CreateInMemoryEventDetailRepository } from "./features/EventDetailPage/EventDetailPageRepository";
+import { CreateEventDetailService } from "./features/EventDetailPage/EventDetailPageService";
+import { CreateEventDetailController } from "./features/EventDetailPage/EventDetailPageController";
+import { CreateInMemorySaveForLaterRepository } from "./features/SaveForLater/SaveForLaterRepo";
+import { CreateSaveForLaterService } from "./features/SaveForLater/SaveForLaterService";
+import { CreateSaveForLaterController } from "./features/SaveForLater/SaveForLaterController";
 
 type AsyncRequestHandler = RequestHandler;
 
@@ -351,6 +357,32 @@ this.app.get(
   }),
 );
 
+// ── Save for Later routes ─────────────────────────────────────────────
+
+const saveForLaterRepo = CreateInMemorySaveForLaterRepository();
+const saveForLaterService = CreateSaveForLaterService(saveForLaterRepo);
+const saveForLaterController = CreateSaveForLaterController(saveForLaterService, this.logger);
+
+this.app.post(
+  "/events/:eventId/save",
+  asyncHandler(async (req, res) => {
+    if (!this.requireAuthenticated(req, res)) {
+      return;
+    }
+    await saveForLaterController.toggleFromButton(req, res);
+  }),
+);
+
+this.app.get(
+  "/saved",
+  asyncHandler(async (req, res) => {
+    if (!this.requireAuthenticated(req, res)) {
+      return;
+    }
+    await saveForLaterController.showSavedPage(req, res);
+  }),
+);
+
 // Event Creation Routes
 const eventRepository = createInMemoryEventRepository();
 const eventService = createEventService(eventRepository);
@@ -394,6 +426,20 @@ this.app.post(
       capacity ? parseInt(capacity) : undefined,
     ); 
   }),
+);
+
+// Event Search Route
+
+this.app.get(
+  "/events/search",
+  asyncHandler(async (req, res) => {
+    if (!this.requireAuthenticated(req, res)) {
+      return;
+    }
+
+    const query = typeof req.body.query === "string" ? req.body.query : "";
+    await eventController.search(res, query);
+   }),
 );
 
 
