@@ -63,8 +63,8 @@ function toEntry(rsvp: IRSVP, event: IEvent): RSVPDashboardEntry {
 
 class RSVPDashboardService implements IRSVPDashboardService {
   constructor(
-    private readonly rsvpRepo: IRSVPRepository,
-    private readonly eventRepo: IEventRepository
+    private readonly rsvpRepo: IRsvpToggleRepository,
+    private readonly eventRepo: IEventListRepository
   ) {}
 
   async getDashboard(userId: string, userRole: string): Promise<Result<RSVPDashboard, RSVPDashboardError>> {
@@ -78,11 +78,10 @@ class RSVPDashboardService implements IRSVPDashboardService {
     ]);
 
     if (!rsvpResult.ok) {
-      const err = rsvpResult.value as RSVPRepoError;
-      return Err({ type: "UnexpectedError" as const, message: err.message });
+      return Err({ type: "UnexpectedError" as const, message: "Failed to load RSVPs." });
     }
     if (!eventResult.ok) {
-      return Err({ type: "UnexpectedError" as const, message: "Failed to fetch event details." });
+      return Err({ type: "UnexpectedError" as const, message: "Failed to load events." });
     }
 
     const eventMap = new Map<string, IEvent>(eventResult.value.map((e) => [e.id, e]));
@@ -109,8 +108,8 @@ class RSVPDashboardService implements IRSVPDashboardService {
 // ── Factory function ──────────────────────────────────────────────────────────
 
 export function CreateRSVPDashboardService(
-  rsvpRepo: IRSVPRepository,
-  eventRepo: IEventRepository
+  rsvpRepo: IRsvpToggleRepository,
+  eventRepo: IEventListRepository
 ): IRSVPDashboardService {
   return new RSVPDashboardService(rsvpRepo, eventRepo);
 }
