@@ -18,6 +18,7 @@ export type EventListRepoError = { type: "UnexpectedError"; message: string };
 
 export interface IEventListRepository {
   findPublished(): Promise<Result<IEvent[], EventListRepoError>>;
+  findAll(): Promise<Result<IEvent[], EventListRepoError>>;
 }
 
 // ── Seed data ─────────────────────────────────────────────────────────────────
@@ -45,7 +46,8 @@ function makeEvent(
   category: string,
   startOffset: Date,
   hoursLong: number,
-  organizerId: string
+  organizerId: string,
+  status: IEvent["status"] = "published"
 ): IEvent {
   const start = new Date(startOffset);
   start.setHours(10, 0, 0, 0);
@@ -56,7 +58,7 @@ function makeEvent(
     description: "",
     location: "TBD",
     category,
-    status: "published",
+    status,
     startDatetime: start,
     endDatetime: end,
     organizerId,
@@ -73,6 +75,9 @@ const SEED_EVENTS: IEvent[] = [
   makeEvent("evt-list-4", "Sunday Study Hall", "academic", sunday, 4, "user-staff"),
   makeEvent("evt-list-5", "Tech Talk: AI Trends", "tech", daysFromNow(10), 2, "user-staff"),
   makeEvent("evt-list-6", "Board Game Night", "social", daysFromNow(5), 3, "user-staff"),
+  // Past events — referenced by RSVP dashboard seed data
+  makeEvent("evt-past-1", "Winter Networking Mixer", "social",   daysFromNow(-14), 3, "user-staff", "past"),
+  makeEvent("evt-past-2", "Resume Workshop",          "careers",  daysFromNow(-7),  2, "user-staff", "past"),
 ];
 
 // ── In-memory implementation ──────────────────────────────────────────────────
@@ -83,6 +88,14 @@ class InMemoryEventListRepository implements IEventListRepository {
   async findPublished(): Promise<Result<IEvent[], EventListRepoError>> {
     try {
       return Ok(this.events.filter((e) => e.status === "published"));
+    } catch {
+      return Err({ type: "UnexpectedError" as const, message: "Failed to fetch events." });
+    }
+  }
+
+  async findAll(): Promise<Result<IEvent[], EventListRepoError>> {
+    try {
+      return Ok([...this.events]);
     } catch {
       return Err({ type: "UnexpectedError" as const, message: "Failed to fetch events." });
     }

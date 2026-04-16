@@ -4,6 +4,7 @@ import session from "express-session";
 import Layouts from "express-ejs-layouts";
 import { IAuthController } from "./auth/AuthController";
 import type { IEventListController } from "./features/EventList/EventListController";
+import type { IRSVPDashboardController } from "./features/RSVPDashboard/RSVPDashboardController";
 import {
   AuthenticationRequired,
   AuthorizationRequired,
@@ -46,6 +47,7 @@ class ExpressApp implements IApp {
   constructor(
     private readonly authController: IAuthController,
     private readonly eventListController: IEventListController,
+    private readonly rsvpDashboardController: IRSVPDashboardController,
     private readonly logger: ILoggingService,
   ) {
     this.app = express();
@@ -273,6 +275,16 @@ class ExpressApp implements IApp {
       }),
     );
 
+    // ── RSVP Dashboard route ──────────────────────────────────────────────
+
+    this.app.get(
+      "/rsvps/dashboard",
+      asyncHandler(async (req, res) => {
+        if (!this.requireRole(req, res, ["user"], "Only members can view the RSVP dashboard.")) return;
+        await this.rsvpDashboardController.showDashboard(req, res);
+      }),
+    );
+
     // ── Event Editing routes ─────────────────────────────────────────────
 
 const eventEditingRepo = CreateInMemoryEventEditingRepository();
@@ -301,7 +313,7 @@ this.app.post(
 // ── RSVP Toggle routes ───────────────────────────────────────────────
 
 const rsvpToggleRepo = CreateInMemoryRsvpToggleRepository();
-const rsvpToggleService = CreateRsvpToggleService(rsvpToggleRepo);
+const rsvpToggleService = CreateRsvpToggleService(rsvpToggleRepo, eventEditingRepo);
 const rsvpToggleController = CreateRsvpToggleController(rsvpToggleService);
 
 this.app.post(
@@ -390,7 +402,8 @@ this.app.post(
 export function CreateApp(
   authController: IAuthController,
   eventListController: IEventListController,
+  rsvpDashboardController: IRSVPDashboardController,
   logger: ILoggingService,
 ): IApp {
-  return new ExpressApp(authController, eventListController, logger);
+  return new ExpressApp(authController, eventListController, rsvpDashboardController, logger);
 }

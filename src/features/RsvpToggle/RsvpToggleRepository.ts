@@ -17,6 +17,8 @@ export type RsvpRepoError =
   | { type: "UnexpectedError"; message: string };
 
 export interface IRsvpToggleRepository {
+  findByUserId(userId: string): Promise<Result<IRsvp[], RsvpRepoError>>;
+
   findByEventAndUser(
     eventId: string,
     userId: string,
@@ -47,8 +49,34 @@ export interface IRsvpToggleRepository {
 
 let nextId = 1;
 
+// ── Seed data ─────────────────────────────────────────────────────────────────
+
+function daysAgo(days: number): Date {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d;
+}
+
+const SEED_RSVPS: IRsvp[] = [
+  { id: "rsvp-seed-1", userId: "user-demo", eventId: "evt-list-1", status: "going",       createdAt: daysAgo(5) },
+  { id: "rsvp-seed-2", userId: "user-demo", eventId: "evt-list-2", status: "waitlisted",  createdAt: daysAgo(4) },
+  { id: "rsvp-seed-3", userId: "user-demo", eventId: "evt-list-5", status: "going",       createdAt: daysAgo(3) },
+  { id: "rsvp-seed-4", userId: "user-demo", eventId: "evt-past-1", status: "going",       createdAt: daysAgo(20) },
+  { id: "rsvp-seed-5", userId: "user-demo", eventId: "evt-past-2", status: "cancelled",   createdAt: daysAgo(10) },
+];
+
+// ── Implementation ────────────────────────────────────────────────────────────
+
 class InMemoryRsvpToggleRepository implements IRsvpToggleRepository {
   constructor(private readonly rsvps: IRsvp[]) {}
+
+  async findByUserId(userId: string): Promise<Result<IRsvp[], RsvpRepoError>> {
+    try {
+      return Ok(this.rsvps.filter((r) => r.userId === userId));
+    } catch {
+      return Err({ type: "UnexpectedError" as const, message: "Failed to fetch RSVPs." });
+    }
+  }
 
   async findByEventAndUser(
     eventId: string,
@@ -173,5 +201,5 @@ class InMemoryRsvpToggleRepository implements IRsvpToggleRepository {
 }
 
 export function CreateInMemoryRsvpToggleRepository(): IRsvpToggleRepository {
-  return new InMemoryRsvpToggleRepository([]);
+  return new InMemoryRsvpToggleRepository([...SEED_RSVPS]);
 }

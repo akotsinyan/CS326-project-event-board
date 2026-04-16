@@ -10,6 +10,10 @@ import type { ILoggingService } from "./service/LoggingService";
 import { CreateInMemoryEventListRepository } from "./features/EventList/EventListRepository";
 import { CreateEventListService } from "./features/EventList/EventListService";
 import { CreateEventListController } from "./features/EventList/EventListController";
+import { CreateInMemoryRsvpToggleRepository } from "./features/RsvpToggle/RsvpToggleRepository";
+import { CreateRSVPDashboardService } from "./features/RSVPDashboard/RSVPDashboardService";
+import { CreateRSVPDashboardController } from "./features/RSVPDashboard/RSVPDashboardController";
+import type { IRSVPDashboardController } from "./features/RSVPDashboard/RSVPDashboardController";
 
 export function createComposedApp(logger?: ILoggingService): IApp {
   const resolvedLogger = logger ?? CreateLoggingService();
@@ -26,5 +30,10 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const eventListService = CreateEventListService(eventListRepo);
   const eventListController = CreateEventListController(eventListService);
 
-  return CreateApp(authController, eventListController, resolvedLogger);
+  // RSVP dashboard wiring (shares the same eventListRepo for event lookups)
+  const rsvpToggleRepo = CreateInMemoryRsvpToggleRepository();
+  const rsvpDashboardService = CreateRSVPDashboardService(rsvpToggleRepo, eventListRepo);
+  const rsvpDashboardController = CreateRSVPDashboardController(rsvpDashboardService);
+
+  return CreateApp(authController, eventListController, rsvpDashboardController, resolvedLogger);
 }
