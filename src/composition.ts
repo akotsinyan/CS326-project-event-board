@@ -95,7 +95,7 @@ export function createComposedApp(logger?: ILoggingService): IApp {
 
   // ── Save for later ────────────────────────────────────────────────────────
   const saveForLaterRepo = CreateInMemorySaveForLaterRepository();
-  const saveForLaterService = CreateSaveForLaterService(saveForLaterRepo);
+  const saveForLaterService = CreateSaveForLaterService(saveForLaterRepo, sharedEventRepo);
   const saveForLaterController = CreateSaveForLaterController(saveForLaterService, resolvedLogger);
 
   return CreateApp(

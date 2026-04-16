@@ -37,7 +37,10 @@ class RsvpToggleController implements IRsvpToggleController {
       return;
     }
 
-    const redirectUrl = `/events/${eventId}`;
+    const defaultUrl = `/events/${eventId}`;
+    const referer = req.get("Referer") ?? "";
+    const redirectUrl = referer && !referer.endsWith(`/events/${eventId}/rsvp`) ? referer : defaultUrl;
+
     if (req.get("HX-Request") === "true") {
       res.set("HX-Redirect", redirectUrl).sendStatus(204);
     } else {

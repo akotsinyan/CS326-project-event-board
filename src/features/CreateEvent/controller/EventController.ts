@@ -22,7 +22,7 @@ class EventController implements IEventController {
 
   renderCreateEventPage(req: Request, res: Response, pageError?: string): void {
     const session = touchAppSession(req.session as AppSessionStore);
-    res.render("events/new", { session, pageError: pageError ?? null });
+    res.render("events/new", { session, pageError: pageError ?? null, formValues: null });
   }
 
   async create(req: Request, res: Response, session: IAppBrowserSession): Promise<void> {
@@ -46,12 +46,16 @@ class EventController implements IEventController {
       const error = result.value as EventError;
       const status = this.mapErrorStatus(error);
       this.logger.warn(`Create event failed: ${error.message}`);
-      res.status(status).render("events/new", { session, pageError: error.message });
+      res.status(status).render("events/new", {
+        session,
+        pageError: error.message,
+        formValues: req.body,
+      });
       return;
     }
 
     this.logger.info(`Event created: ${result.value.id}`);
-    res.redirect("/events");
+    res.redirect(`/events/${result.value.id}`);
   }
 
   async search(req: Request, res: Response): Promise<void> {

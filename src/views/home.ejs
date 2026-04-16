@@ -1,14 +1,9 @@
 <section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-gradient-to-b from-white to-slate-50 shadow-lg">
-  <h1 class="text-3xl font-bold text-slate-900 mb-3">Welcome to Project Starter</h1>
-  <p class="text-slate-500">
-    You are signed in and ready to build. This placeholder page is where your
-    project's main content will go.
-  </p>
+  <h1 class="text-3xl font-bold text-slate-900 mb-3">Welcome to Event Board</h1>
   <% if (session.authenticatedUser) { %>
     <p class="text-slate-500 mt-2 mb-0">
       Signed in as <strong class="text-slate-700"><%= session.authenticatedUser.displayName %></strong>
-      (<%= session.authenticatedUser.email %>, role:
-      <strong class="text-slate-700"><%= session.authenticatedUser.role %></strong>).
+      (<%= session.authenticatedUser.role %>).
     </p>
   <% } %>
 </section>
@@ -17,50 +12,39 @@
   <%- include("partials/error", { message: pageError }) %>
 <% } %>
 
-<section class="max-w-3xl p-6 border border-slate-200 rounded-2xl bg-white shadow-lg">
-  <div class="mb-4">
-    <h2 class="text-xl font-semibold mb-2">Getting Started</h2>
-    <p class="text-slate-500">
-      This starter application provides authentication and role-based authorization
-      out of the box. Here are some ideas for where to begin:
-    </p>
-  </div>
+<section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <a href="/events" class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg hover:shadow-md no-underline block">
+    <h2 class="text-lg font-semibold text-slate-900 mb-1">Browse Events</h2>
+    <p class="text-slate-500 text-sm">Find and RSVP to upcoming events.</p>
+  </a>
 
-  <ul class="list-disc pl-5 space-y-2 text-slate-700">
-    <li>Replace this page with your project's main dashboard or landing page.</li>
-    <li>Add new routes in <code class="bg-slate-100 px-1 rounded text-sm">src/app.ts</code> and protect them with
-      <code class="bg-slate-100 px-1 rounded text-sm">requireAuthenticated</code> or <code class="bg-slate-100 px-1 rounded text-sm">requireRole</code>.</li>
-    <li>Create new EJS views in <code class="bg-slate-100 px-1 rounded text-sm">src/views/</code>.</li>
-    <li>Add your own models, services, and controllers under <code class="bg-slate-100 px-1 rounded text-sm">src/</code>.</li>
-    <li>Use the Prisma schema in <code class="bg-slate-100 px-1 rounded text-sm">prisma/schema.prisma</code> to define your database tables.</li>
-  </ul>
-</section>
+  <% if (session.authenticatedUser?.role === "user") { %>
+    <a href="/rsvps/dashboard" class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg hover:shadow-md no-underline block">
+      <h2 class="text-lg font-semibold text-slate-900 mb-1">My RSVPs</h2>
+      <p class="text-slate-500 text-sm">View and manage your event registrations.</p>
+    </a>
+    <a href="/saved" class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg hover:shadow-md no-underline block">
+      <h2 class="text-lg font-semibold text-slate-900 mb-1">Saved Events</h2>
+      <p class="text-slate-500 text-sm">Events you've bookmarked for later.</p>
+    </a>
+  <% } %>
 
-<section class="max-w-3xl mt-5 p-6 border border-slate-200 rounded-2xl bg-white shadow-lg" x-data="{ open: false }">
-  <button
-    @click="open = !open"
-    class="w-full flex items-center justify-between text-left bg-transparent border-0 p-0 cursor-pointer"
-  >
-    <h2 class="text-xl font-semibold">Alpine.js Demo</h2>
-    <span class="text-slate-400 text-sm" x-text="open ? 'Hide' : 'Show'">Show</span>
-  </button>
+  <% if (session.authenticatedUser?.role === "staff" || session.authenticatedUser?.role === "admin") { %>
+    <a href="/events/new" class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg hover:shadow-md no-underline block">
+      <h2 class="text-lg font-semibold text-slate-900 mb-1">Create Event</h2>
+      <p class="text-slate-500 text-sm">Draft a new event for your community.</p>
+    </a>
+  <% } %>
 
-  <div x-show="open" x-transition class="mt-4">
-    <p class="text-slate-500 mb-3">
-      Alpine.js is included via CDN and ready to use. This collapsible section is
-      a quick demonstration. Use <code class="bg-slate-100 px-1 rounded text-sm">x-data</code>,
-      <code class="bg-slate-100 px-1 rounded text-sm">x-show</code>,
-      <code class="bg-slate-100 px-1 rounded text-sm">@click</code>, and other
-      Alpine directives directly in your EJS templates.
-    </p>
-    <div x-data="{ count: 0 }" class="flex items-center gap-3">
-      <button
-        @click="count++"
-        class="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium cursor-pointer hover:bg-blue-700 text-sm"
-      >
-        Clicked: <span x-text="count">0</span>
-      </button>
-      <span class="text-sm text-slate-500">A simple Alpine.js counter</span>
-    </div>
-  </div>
+  <% if (session.authenticatedUser?.role === "admin") { %>
+    <a href="/admin/users" class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg hover:shadow-md no-underline block">
+      <h2 class="text-lg font-semibold text-slate-900 mb-1">Manage Users</h2>
+      <p class="text-slate-500 text-sm">Create and remove user accounts.</p>
+    </a>
+  <% } %>
+
+  <a href="/events/archive" class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg hover:shadow-md no-underline block">
+    <h2 class="text-lg font-semibold text-slate-900 mb-1">Past Events</h2>
+    <p class="text-slate-500 text-sm">Browse the archive of concluded events.</p>
+  </a>
 </section>

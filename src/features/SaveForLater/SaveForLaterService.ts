@@ -1,11 +1,9 @@
-import { type Result, Err } from "../../lib/result";
+import { Ok, type Result, Err } from "../../lib/result";
 import type { ISaveForLaterRepository } from "./SaveForLaterRepo";
-import {
-  SaveEventError,
-  ValidationError,
-  Unauthorized,
-} from "./errors";
+import { SaveEventError, ValidationError, Unauthorized, UnexpectedDependencyError } from "./errors";
 import type { IUserSummary } from "../../auth/User";
+import type { IEventEditingRepository } from "../EventEditing/EventEditingRepository";
+import type { IEvent } from "../CreateEvent/model/event";
 
 // ── Interface ────────────────────────────────────────
 
@@ -17,54 +15,45 @@ export interface ISaveForLaterService {
 
   listSaved(
     user: IUserSummary | null,
-  ): Promise<Result<string[], SaveEventError>>;
+  ): Promise<Result<IEvent[], SaveEventError>>;
 }
 
 // ── Implementation ───────────────────────────────────
 
 class SaveForLaterService implements ISaveForLaterService {
-  constructor(private readonly repo: ISaveForLaterRepository) { }
+  constructor(
+    private readonly repo: ISaveForLaterRepository,
+    private readonly eventRepo: IEventEditingRepository,
+  ) {}
 
   async toggleSave(
     user: IUserSummary | null,
     eventId: string,
   ): Promise<Result<"saved" | "unsaved", SaveEventError>> {
-    if (!user) {
-      return Err(Unauthorized("You must be logged in."));
-    }
-
-    if (user.role !== "user") {
-      return Err(Unauthorized("Only members can save events."));
-    }
-
-    if (!eventId) {
-      return Err(ValidationError("Invalid event ID."));
-    }
-
+    if (!user) return Err(Unauthorized("You must be logged in."));
+    if (user.role !== "user") return Err(Unauthorized("Only members can save events."));
+    if (!eventId) return Err(ValidationError("Invalid event ID."));
     return this.repo.toggle(user.id, eventId);
   }
 
   async listSaved(
     user: IUserSummary | null,
-  ): Promise<Result<string[], SaveEventError>> {
-    if (!user) {
-      return Err(Unauthorized("You must be logged in."));
-    }
+  ): Promise<Result<IEvent[], SaveEventError>> {
+    if (!user) return Err(Unauthorized("You must be logged in."));
+    if (user.role !== "user") return Err(Unauthorized("Only members have saved events."));
 
-    if (user.role !== "user") {
-      return Err(Unauthorized("Only members have saved events."));
-    }
+    const savedResult = await this.repo.findByUser(user.id);
+    if (!savedResult.ok) return Err(savedResult.value as SaveEventError);
 
-    const result = await this.repo.findByUser(user.id);
+    const eventsResult = await this.eventRepo.findAll();
+    if (!eventsResult.ok) return Err(UnexpectedDependencyError("Failed to load event details."));
 
-    if (!result.ok) {
-      return Err(result.value as SaveEventError);
-    }
+    const eventMap = new Map(eventsResult.value.map((e) => [e.id, e]));
+    const events = savedResult.value
+      .map((s) => eventMap.get(s.eventId))
+      .filter((e): e is IEvent => e !== undefined);
 
-    return {
-      ok: true,
-      value: result.value.map((s) => s.eventId),
-    };
+    return Ok(events);
   }
 }
 
@@ -72,6 +61,7 @@ class SaveForLaterService implements ISaveForLaterService {
 
 export function CreateSaveForLaterService(
   repo: ISaveForLaterRepository,
+  eventRepo: IEventEditingRepository,
 ): ISaveForLaterService {
-  return new SaveForLaterService(repo);
+  return new SaveForLaterService(repo, eventRepo);
 }

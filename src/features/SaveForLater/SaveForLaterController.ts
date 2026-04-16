@@ -85,7 +85,7 @@ class SaveForLaterController implements ISaveForLaterController {
       this.logger.warn(`Load saved events failed: ${error.message}`);
       res.status(this.mapErrorStatus(error)).render("saved/index", {
         session,
-        savedEvents: [],
+        events: [],
         pageError: error.message,
       });
       return;
@@ -93,7 +93,7 @@ class SaveForLaterController implements ISaveForLaterController {
 
     res.render("saved/index", {
       session,
-      savedEvents: result.value,
+      events: result.value,
       pageError: null,
     });
   }
