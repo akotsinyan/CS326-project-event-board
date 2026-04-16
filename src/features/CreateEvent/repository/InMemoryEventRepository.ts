@@ -22,6 +22,16 @@ class InMemoryEventRepository implements IEventRepository {
     this.events.push(event);
     return Ok(event);
   }
+
+  async search(query: string): Promise<Result<IEvent[], EventError>> {
+    const results = this.events.filter(
+      (event) =>
+        event.title.includes(query) ||
+        event.description.includes(query) ||
+        event.location.includes(query)
+    );
+    return Ok(results);
+  }
 }
 
 export function createInMemoryEventRepository(): IEventRepository {
