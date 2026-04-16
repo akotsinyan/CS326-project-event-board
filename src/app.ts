@@ -301,7 +301,7 @@ this.app.post(
 // ── RSVP Toggle routes ───────────────────────────────────────────────
 
 const rsvpToggleRepo = CreateInMemoryRsvpToggleRepository();
-const rsvpToggleService = CreateRsvpToggleService(rsvpToggleRepo);
+const rsvpToggleService = CreateRsvpToggleService(rsvpToggleRepo, eventEditingRepo);
 const rsvpToggleController = CreateRsvpToggleController(rsvpToggleService);
 
 this.app.post(
