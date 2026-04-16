@@ -27,6 +27,12 @@ import { CreateRsvpToggleController } from "./features/RsvpToggle/RsvpToggleCont
 import { createInMemoryEventRepository } from "./features/CreateEvent/repository/InMemoryEventRepository";
 import { createEventService } from "./features/CreateEvent/service/EventService";
 import { createEventController } from "./features/CreateEvent/controller/EventController";
+import { CreateInMemoryEventDetailRepository } from "./features/EventDetailPage/EventDetailPageRepository";
+import { CreateEventDetailService } from "./features/EventDetailPage/EventDetailPageService";
+import { CreateEventDetailController } from "./features/EventDetailPage/EventDetailPageController";
+import { CreateInMemorySaveForLaterRepository } from "./features/SaveForLater/SaveForLaterRepo";
+import { CreateSaveForLaterService } from "./features/SaveForLater/SaveForLaterService";
+import { CreateSaveForLaterController } from "./features/SaveForLater/SaveForLaterController";
 
 type AsyncRequestHandler = RequestHandler;
 
@@ -321,6 +327,32 @@ this.app.get(
       return;
     }
     await rsvpToggleController.getRsvpStatus(req, res);
+  }),
+);
+
+// ── Save for Later routes ─────────────────────────────────────────────
+
+const saveForLaterRepo = CreateInMemorySaveForLaterRepository();
+const saveForLaterService = CreateSaveForLaterService(saveForLaterRepo);
+const saveForLaterController = CreateSaveForLaterController(saveForLaterService, this.logger);
+
+this.app.post(
+  "/events/:eventId/save",
+  asyncHandler(async (req, res) => {
+    if (!this.requireAuthenticated(req, res)) {
+      return;
+    }
+    await saveForLaterController.toggleFromButton(req, res);
+  }),
+);
+
+this.app.get(
+  "/saved",
+  asyncHandler(async (req, res) => {
+    if (!this.requireAuthenticated(req, res)) {
+      return;
+    }
+    await saveForLaterController.showSavedPage(req, res);
   }),
 );
 

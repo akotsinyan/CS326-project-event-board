@@ -53,11 +53,12 @@ class SaveForLaterController implements ISaveForLaterController {
     const result = await this.service.toggleSave(user, eventId);
 
     if (!result.ok) {
-      this.logger.warn(`Save toggle failed: ${result.value.message}`);
+      const error = result.value as SaveEventError;
+      this.logger.warn(`Save toggle failed: ${error.message}`);
       res
-        .status(this.mapErrorStatus(result.value))
+        .status(this.mapErrorStatus(error))
         .render("partials/error", {
-          message: result.value.message,
+          message: error.message,
           layout: false,
         });
       return;
@@ -78,10 +79,11 @@ class SaveForLaterController implements ISaveForLaterController {
     const result = await this.service.listSaved(user);
 
     if (!result.ok) {
-      this.logger.warn(`Load saved events failed: ${result.value.message}`);
-      res.status(this.mapErrorStatus(result.value)).render("saved/index", {
+      const error = result.value as SaveEventError;
+      this.logger.warn(`Load saved events failed: ${error.message}`);
+      res.status(this.mapErrorStatus(error)).render("saved/index", {
         savedEvents: [],
-        pageError: result.value.message,
+        pageError: error.message,
       });
       return;
     }

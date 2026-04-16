@@ -42,7 +42,7 @@ class EventDetailController implements IEventDetailController {
     );
 
     if (!result.ok) {
-      const error = result.value;
+      const error = result.value as EventDetailError;
       const status = this.mapErrorStatus(error);
 
       const log = status >= 500 ? this.logger.error : this.logger.warn;
@@ -63,6 +63,7 @@ class EventDetailController implements IEventDetailController {
       canEdit: user.role === "admin" || user.userId === event.organizerId,
       canCancel: user.role === "admin" || user.userId === event.organizerId,
       canRsvp: user.role === "user",
+      canSave: user.role === "user",
     });
   }
 }
