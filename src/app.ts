@@ -369,6 +369,20 @@ this.app.post(
   }),
 );
 
+// Event Search Route
+
+this.app.get(
+  "/events/search",
+  asyncHandler(async (req, res) => {
+    if (!this.requireAuthenticated(req, res)) {
+      return;
+    }
+
+    const query = typeof req.body.query === "string" ? req.body.query : "";
+    await eventController.search(res, query);
+   }),
+);
+
 
     // ── Error handler ────────────────────────────────────────────────
 
