@@ -1,0 +1,28 @@
+<%
+function formatDate(d) {
+  return new Date(d).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+function formatTime(d) {
+  return new Date(d).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+%>
+<li id="rsvp-row-<%= entry.rsvpId %>" class="p-5 border border-slate-200 rounded-2xl bg-slate-50 shadow-sm flex flex-col gap-1 opacity-75">
+  <div class="flex items-center justify-between gap-3 flex-wrap">
+    <span class="text-lg font-bold text-slate-600"><%= entry.eventTitle %></span>
+    <div class="flex items-center gap-2">
+      <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+        <%= entry.eventCategory %>
+      </span>
+      <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-red-50 text-red-600 border border-red-200">
+        Cancelled
+      </span>
+    </div>
+  </div>
+  <p class="text-sm text-slate-400">
+    <%= formatDate(entry.eventStartDatetime) %>
+    &middot;
+    <%= formatTime(entry.eventStartDatetime) %> &ndash; <%= formatTime(entry.eventEndDatetime) %>
+  </p>
+  <p class="text-sm text-slate-400"><%= entry.eventLocation %></p>
+  <a href="/events/<%= entry.eventId %>" class="text-slate-400 hover:text-slate-600 text-sm font-semibold no-underline mt-2 inline-block">View Event →</a>
+</li>
