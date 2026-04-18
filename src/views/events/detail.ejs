@@ -5,7 +5,7 @@
       <p class="text-slate-500">Organized by <%= event.organizerName %></p>
     </div>
     <% const statusColors = { published: "bg-green-100 text-green-800 border-green-200", draft: "bg-yellow-100 text-yellow-800 border-yellow-200", cancelled: "bg-red-100 text-red-800 border-red-200", past: "bg-slate-100 text-slate-600 border-slate-200" }; %>
-    <span class="inline-block text-xs font-semibold px-3 py-1.5 rounded-full border capitalize <%= statusColors[event.status] || 'bg-slate-100 text-slate-600 border-slate-200' %>">
+    <span id="status-badge" class="inline-block text-xs font-semibold px-3 py-1.5 rounded-full border capitalize <%= statusColors[event.status] || 'bg-slate-100 text-slate-600 border-slate-200' %>">
       <%= event.status %>
     </span>
   </div>
@@ -86,39 +86,7 @@
 
     <!-- Organizer / Admin Actions -->
     <% if (canEdit || canPublish || canCancel) { %>
-      <div class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg mb-6">
-        <h3 class="text-sm font-bold text-slate-900 mb-3">Event Management</h3>
-        <div class="space-y-2">
-          <% if (canEdit) { %>
-            <a
-              href="/events/<%= event.id %>/edit"
-              class="block w-full px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold text-center hover:bg-blue-700 no-underline"
-            >
-              Edit Event
-            </a>
-          <% } %>
-          <% if (canPublish) { %>
-            <form method="POST" action="/events/<%= event.id %>/publish">
-              <button
-                type="submit"
-                class="w-full px-4 py-2 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 cursor-pointer"
-              >
-                Publish Event
-              </button>
-            </form>
-          <% } %>
-          <% if (canCancel) { %>
-            <button
-              type="button"
-              class="w-full px-4 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 cursor-pointer"
-              onclick="if (confirm('Are you sure you want to cancel this event? This cannot be undone.')) { document.getElementById('cancelForm').submit(); }"
-            >
-              Cancel Event
-            </button>
-            <form id="cancelForm" method="POST" action="/events/<%= event.id %>/cancel" style="display: none;"></form>
-          <% } %>
-        </div>
-      </div>
+      <%- include("./partials/publishingControls", { event, canEdit, canPublish, canCancel, statusBadgeClass: statusColors[event.status] || "bg-slate-100 text-slate-600 border-slate-200" }) %>
     <% } %>
 
     <!-- RSVP Button -->
