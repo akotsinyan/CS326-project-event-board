@@ -76,6 +76,7 @@ class EventEditingController implements IEventEditingController {
     }
 
     const eventId = typeof req.params.eventId === "string" ? req.params.eventId : "";
+    const isHtmx = req.get("HX-Request") === "true";
 
     const data = {
       title: typeof req.body.title === "string" ? req.body.title.trim() : undefined,
@@ -119,19 +120,31 @@ class EventEditingController implements IEventEditingController {
         return;
       }
 
+      // InvalidState or InvalidInput — show error
+      const errorMessage = "message" in error ? error.message : "Could not save changes.";
+
+      if (isHtmx) {
+        // Return just the error partial — HTMX swaps it into #edit-error
+        res.status(400).render("partials/error", { message: errorMessage, layout: false });
+        return;
+      }
+
+      // Fallback for non-HTMX (no JS) — full page reload with error
       const eventResult = await this.service.getEventForEdit(
         eventId,
         currentUser.userId,
         currentUser.role
       );
-
       const event = eventResult.ok ? { ...eventResult.value, ...data } : data;
+      res.status(400).render("events/edit", { session, event, pageError: errorMessage });
+      return;
+    }
 
-      res.status(400).render("events/edit", {
-        session,
-        event,
-        pageError: "message" in error ? error.message : "Could not save changes.",
-      });
+    // Success — redirect to event detail page
+    if (isHtmx) {
+      // HTMX redirect using HX-Redirect header
+      res.set("HX-Redirect", `/events/${result.value.id}`);
+      res.status(200).send();
       return;
     }
 
