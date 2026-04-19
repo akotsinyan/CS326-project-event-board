@@ -19,7 +19,7 @@ function formatTime(d) {
   <% } else { %>
     <ul class="space-y-3">
       <% for (const entry of upcoming) { %>
-        <li class="p-5 border border-slate-200 rounded-2xl bg-white shadow-sm flex flex-col gap-1">
+        <li id="rsvp-row-<%= entry.rsvpId %>" class="p-5 border border-slate-200 rounded-2xl bg-white shadow-sm flex flex-col gap-1">
           <div class="flex items-center justify-between gap-3 flex-wrap">
             <span class="text-lg font-bold text-slate-900"><%= entry.eventTitle %></span>
             <div class="flex items-center gap-2">
@@ -45,11 +45,23 @@ function formatTime(d) {
           <p class="text-sm text-slate-500"><%= entry.eventLocation %></p>
           <div class="flex items-center gap-3 mt-2">
             <a href="/events/<%= entry.eventId %>" class="text-blue-600 hover:text-blue-700 text-sm font-semibold no-underline">View Event →</a>
-            <form method="POST" action="/events/<%= entry.eventId %>/rsvp" class="inline">
-              <button type="submit" class="text-red-600 hover:text-red-700 text-sm font-semibold cursor-pointer bg-transparent border-0 p-0">
-                Cancel RSVP
-              </button>
-            </form>
+            <button
+              type="button"
+              class="text-red-600 hover:text-red-700 text-sm font-semibold cursor-pointer bg-transparent border-0 p-0"
+              hx-post="/events/<%= entry.eventId %>/rsvp"
+              hx-target="#rsvp-row-<%= entry.rsvpId %>"
+              hx-swap="outerHTML"
+              hx-confirm="Cancel your RSVP for this event?"
+            >
+              Cancel RSVP
+            </button>
+            <noscript>
+              <form method="POST" action="/events/<%= entry.eventId %>/rsvp" class="inline">
+                <button type="submit" class="text-red-600 hover:text-red-700 text-sm font-semibold cursor-pointer bg-transparent border-0 p-0">
+                  Cancel RSVP
+                </button>
+              </form>
+            </noscript>
           </div>
         </li>
       <% } %>

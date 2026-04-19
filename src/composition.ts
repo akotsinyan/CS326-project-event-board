@@ -83,7 +83,7 @@ export function createComposedApp(logger?: ILoggingService): IApp {
 
   // ── RSVP toggle ───────────────────────────────────────────────────────────
   const rsvpToggleService = CreateRsvpToggleService(rsvpToggleRepo, sharedEventRepo, waitlistPromotionService);
-  const rsvpToggleController = CreateRsvpToggleController(rsvpToggleService);
+  const rsvpToggleController = CreateRsvpToggleController(rsvpToggleService, sharedEventRepo);
 
   // ── RSVP dashboard ────────────────────────────────────────────────────────
   const rsvpDashboardService = CreateRSVPDashboardService(rsvpToggleRepo, sharedEventRepo);
