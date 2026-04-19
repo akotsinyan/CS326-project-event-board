@@ -55,12 +55,34 @@ class EventPublishingController implements IEventPublishingController {
       return;
     }
 
-    const redirectUrl = `/events/${result.value.id}`;
+    const event = result.value;
+    const redirectUrl = `/events/${event.id}`;
+
     if (req.get("HX-Request") === "true") {
-      res.set("HX-Redirect", redirectUrl).sendStatus(204);
-    } else {
-      res.redirect(redirectUrl);
+      const canActOnUpdated =
+        currentUser.role === "admin" ||
+        (currentUser.role === "staff" && event.organizerId === currentUser.userId);
+      const canPublish = event.status === "draft" && canActOnUpdated;
+      const canCancel = event.status === "published" && canActOnUpdated;
+      const canEdit = event.status === "draft" && canActOnUpdated;
+      const statusColors: Record<string, string> = {
+        published: "bg-green-100 text-green-800 border-green-200",
+        draft: "bg-yellow-100 text-yellow-800 border-yellow-200",
+        cancelled: "bg-red-100 text-red-800 border-red-200",
+        past: "bg-slate-100 text-slate-600 border-slate-200",
+      };
+      res.render("events/partials/publishingControls", {
+        event,
+        canEdit,
+        canPublish,
+        canCancel,
+        statusBadgeClass: statusColors[event.status] ?? "bg-slate-100 text-slate-600 border-slate-200",
+        layout: false,
+      });
+      return;
     }
+
+    res.redirect(redirectUrl);
   }
 }
 
