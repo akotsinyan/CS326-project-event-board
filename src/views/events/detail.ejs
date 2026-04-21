@@ -101,7 +101,7 @@
 
     <% if (canSave) { %>
       <div class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg">
-        <%- include("./partials/saveButton", { eventId: event.id, state: "unsaved" }) %>
+        <%- include("./partials/saveButton", { eventId: event.id, state: saveState }) %>
       </div>
     <% } %>
   </div>
