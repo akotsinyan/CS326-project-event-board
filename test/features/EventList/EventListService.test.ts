@@ -190,6 +190,91 @@ describe("EventListService.getFilteredEvents", () => {
     });
   });
 
+  describe("search query filter", () => {
+    it("returns only events whose title, description, or location contain the query string", async () => {
+      const events = [
+        makeEvent({ id: "e1", title: "Spring Hackathon 2024" }),
+        makeEvent({ id: "e2", description: "Meet recruiters and hiring managers 2024"}),
+        makeEvent({ id: "e3", location: "Main Hall 2024"}),
+        makeEvent({ id: "e4", title: "Unrelated Event", description: "Nothing to see here", location: "Room 2"}),
+      ];
+      const service = CreateEventListService(makeRepo(events));
+
+      let result = await service.getFilteredEvents({ query: "main" });
+      
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toHaveLength(1);
+        expect(result.value[0].id).toBe("e3");
+      }
+
+      result = await service.getFilteredEvents({ query: "recruiters" });
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toHaveLength(1);
+        expect(result.value[0].id).toBe("e2");
+      }
+
+      result = await service.getFilteredEvents({ query: "hackathon" });
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toHaveLength(1);
+        expect(result.value[0].id).toBe("e1");
+      }
+
+      result = await service.getFilteredEvents({ query: "2024" });
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toHaveLength(3);
+        const ids = result.value.map((e) => e.id);
+        expect(ids).toContain("e1");
+        expect(ids).toContain("e2");
+        expect(ids).toContain("e3");
+        expect(ids).not.toContain("e4");
+      }
+    });
+
+    it("is case-insensitive for search query matching", async () => {
+      const events = [makeEvent({ id: "e1", title: "Spring Hackathon 2024" })]; 
+      const service = CreateEventListService(makeRepo(events));
+
+      const result = await service.getFilteredEvents({ query: "sPRiNg" });
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toHaveLength(1);
+        expect(result.value[0].id).toBe("e1");
+      }
+    });
+
+    it("returns empty array when no events match the search query", async () => {
+      const events = [makeEvent({ id: "e1", title: "Spring Hackathon 2024" })];
+      const service = CreateEventListService(makeRepo(events));
+
+      const result = await service.getFilteredEvents({ query: "Non-existent-Event" });
+
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value).toHaveLength(0);
+    });
+
+    it("returns all events when search query is empty", async () => {
+      const events = [
+        makeEvent({ id: "e1", title: "Spring Hackathon 2024" }),
+        makeEvent({ id: "e2", description: "Career Fair 2024" }),
+      ];
+      const service = CreateEventListService(makeRepo(events));
+
+      let result = await service.getFilteredEvents({ query: "" });
+
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value).toHaveLength(2);
+    });
+  });
+
+
   describe("combined filters", () => {
     it("applies both category and timeframe filters together", async () => {
       const events = [
@@ -205,6 +290,24 @@ describe("EventListService.getFilteredEvents", () => {
       if (result.ok) {
         expect(result.value.every((e) => e.category === "tech")).toBe(true);
         expect(result.value.every((e) => e.startDatetime > new Date())).toBe(true);
+      }
+    });
+
+    it("applies category, timeframe, and search query filters together", async () => {
+      const events = [
+        makeEvent({ id: "e1", category: "tech", title: "Hackathon", startDatetime: tomorrow }),
+        makeEvent({ id: "e2", category: "tech", title: "Career Fair", startDatetime: tomorrow }),
+        makeEvent({ id: "e3", category: "social", title: "Hackathon", startDatetime: tomorrow }),
+        makeEvent({ id: "e4", category: "tech", title: "Hackathon", startDatetime: inTenDays }),
+      ];
+      const service = CreateEventListService(makeRepo(events));
+
+      const result = await service.getFilteredEvents({ category: "tech", timeframe: "this-week", query: "hackathon" });
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toHaveLength(1);
+        expect(result.value[0].id).toBe("e1");
       }
     });
   });
