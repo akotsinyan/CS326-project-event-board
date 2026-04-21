@@ -26,7 +26,7 @@ function makeEvent(overrides = {}) {
   };
 }
 
-describe("Create Event — integration", () => {
+describe("Create And Search Event — integration", () => {
   describe("GET /events/new", () => {
     it("renders the create event page for admin users", async () => {
       const agent = request.agent(makeApp());
@@ -109,6 +109,58 @@ describe("Create Event — integration", () => {
       const res = await agent.post("/events/new").type("form").send(makeEvent());
 
       expect(res.status).toBe(401);
+    });
+  });
+
+  describe("GET /events", () => {
+    it("filters based on event title", async () => {
+      const agent = request.agent(makeApp());
+      await loginAs(agent, "admin@app.test");
+
+      const res = await agent.get("/events").type("form").send({ q: "Spring Hackathon" });
+
+      expect(res.status).toBe(200);
+      expect(res.text).toContain("Spring Hackathon");
+    });
+
+    it("filters based on event description", async () => {
+      const agent = request.agent(makeApp());
+      await loginAs(agent, "admin@app.test");
+
+      const res = await agent.get("/events").type("form").send({ q: "Meet recruiters and hiring managers from top companies" });
+
+      expect(res.status).toBe(200);
+      expect(res.text).toContain("Career Fair");
+    });
+
+    it("filters based on event location", async () => {
+      const agent = request.agent(makeApp());
+      await loginAs(agent, "admin@app.test");
+
+      const res = await agent.get("/events").type("form").send({ q: "Main Hall" });
+
+      expect(res.status).toBe(200);
+      expect(res.text).toContain("Career Fair");
+      expect(res.text).toContain("Main Hall");
+    });
+
+    it("returns an empty list message when no events match the search query", async () => {
+      const agent = request.agent(makeApp());
+      await loginAs(agent, "admin@app.test");
+
+      const res = await agent.get("/events").type("form").send({ q: "Non-existent-Event" });
+
+      expect(res.status).toBe(200);
+      expect(res.text).toContain("No events match your filters.");
+    });
+
+    it("returns 200 with the full event list when search query is empty or all whitespace", async () => {
+      const agent = request.agent(makeApp());
+      await loginAs(agent, "admin@app.test");
+
+      const res = await agent.get("/events").type("form").send({ q: "   " });
+
+      expect(res.status).toBe(200);
     });
   });
 });
