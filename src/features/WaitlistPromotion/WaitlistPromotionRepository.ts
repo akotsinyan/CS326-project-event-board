@@ -61,7 +61,7 @@ class WaitlistPromotionRepository implements IWaitlistPromotionRepository {
   ): Promise<Result<WaitlistPromotionResult, WaitlistPromotionError>> {
     const waitlistedResult = await this.rsvpRepo.findWaitlistedByEvent(eventId);
     if (!waitlistedResult.ok) {
-      return Err(toPromotionError(waitlistedResult.value));
+      return Err(toPromotionError(waitlistedResult.value as RsvpRepoError));
     }
 
     const nextInLine = waitlistedResult.value[0];
@@ -71,7 +71,7 @@ class WaitlistPromotionRepository implements IWaitlistPromotionRepository {
 
     const updateResult = await this.rsvpRepo.updateStatus(nextInLine.id, "going");
     if (!updateResult.ok) {
-      return Err(toPromotionError(updateResult.value));
+      return Err(toPromotionError(updateResult.value as RsvpRepoError));
     }
 
     return Ok({ promoted: true, userId: updateResult.value.userId });
@@ -83,7 +83,7 @@ class WaitlistPromotionRepository implements IWaitlistPromotionRepository {
   ): Promise<Result<number | null, WaitlistPromotionError>> {
     const existingResult = await this.rsvpRepo.findByEventAndUser(eventId, userId);
     if (!existingResult.ok) {
-      return Err(toPromotionError(existingResult.value));
+      return Err(toPromotionError(existingResult.value as RsvpRepoError));
     }
 
     const existing = existingResult.value;
@@ -93,7 +93,7 @@ class WaitlistPromotionRepository implements IWaitlistPromotionRepository {
 
     const countResult = await this.rsvpRepo.countWaitlistedAhead(eventId, userId);
     if (!countResult.ok) {
-      return Err(toPromotionError(countResult.value));
+      return Err(toPromotionError(countResult.value as RsvpRepoError));
     }
 
     return Ok(countResult.value + 1);
