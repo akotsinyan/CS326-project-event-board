@@ -73,8 +73,14 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const eventPublishingService = CreateEventPublishingService(sharedEventRepo);
   const eventPublishingController = CreateEventPublishingController(eventPublishingService);
 
+
+  // ── Save for later ────────────────────────────────────────────────────────
+  const saveForLaterRepo = CreateInMemorySaveForLaterRepository();
+  const saveForLaterService = CreateSaveForLaterService(saveForLaterRepo, sharedEventRepo);
+  const saveForLaterController = CreateSaveForLaterController(saveForLaterService, resolvedLogger);
+
   // ── Event detail ──────────────────────────────────────────────────────────
-  const eventDetailService = CreateEventDetailService(sharedEventRepo, rsvpToggleRepo);
+  const eventDetailService = CreateEventDetailService(sharedEventRepo, rsvpToggleRepo, saveForLaterRepo);
   const eventDetailController = CreateEventDetailController(eventDetailService, resolvedLogger);
 
   // ── Past event archiving ──────────────────────────────────────────────────
@@ -93,10 +99,6 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const createEvtService = createEventService(sharedEventRepo);
   const createEvtController = createEventController(createEvtService, resolvedLogger);
 
-  // ── Save for later ────────────────────────────────────────────────────────
-  const saveForLaterRepo = CreateInMemorySaveForLaterRepository();
-  const saveForLaterService = CreateSaveForLaterService(saveForLaterRepo, sharedEventRepo);
-  const saveForLaterController = CreateSaveForLaterController(saveForLaterService, resolvedLogger);
 
   return CreateApp(
     authController,

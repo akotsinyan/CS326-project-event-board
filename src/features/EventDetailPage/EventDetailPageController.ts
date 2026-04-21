@@ -65,6 +65,7 @@ class EventDetailController implements IEventDetailController {
       canSave: currentUser.role === "user",
       rsvpStatus: event.currentUserRsvpStatus,
       waitlistPosition: event.waitlistPosition,
+      saveState: event.currentUserSavedState,
     });
   }
 }
