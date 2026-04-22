@@ -1,6 +1,6 @@
-import { CreateInMemoryRsvpToggleRepository } from "../src/features/RsvpToggle/RsvpToggleRepository";
-import { CreateRsvpToggleService } from "../src/features/RsvpToggle/RsvpToggleService";
-import { CreateInMemoryEventEditingRepository } from "../src/features/EventEditing/EventEditingRepository";
+import { CreateInMemoryRsvpToggleRepository } from "../../src/features/RsvpToggle/RsvpToggleRepository";
+import { CreateRsvpToggleService } from "../../src/features/RsvpToggle/RsvpToggleService";
+import { CreateInMemoryEventEditingRepository } from "../../src/features/EventEditing/EventEditingRepository";
 
 function setup() {
   const rsvpRepo  = CreateInMemoryRsvpToggleRepository([]);

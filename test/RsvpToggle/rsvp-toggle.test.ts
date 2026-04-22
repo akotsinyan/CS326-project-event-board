@@ -12,37 +12,37 @@
 import request, { type Agent } from "supertest";
 import type { Express } from "express";
 
-import { CreateApp } from "../src/app";
-import { CreateLoggingService } from "../src/service/LoggingService";
+import { CreateApp } from "../../src/app";
+import { CreateLoggingService } from "../../src/service/LoggingService";
 
-import { CreateInMemoryUserRepository } from "../src/auth/InMemoryUserRepository";
-import { CreatePasswordHasher } from "../src/auth/PasswordHasher";
-import { CreateAuthService } from "../src/auth/AuthService";
-import { CreateAdminUserService } from "../src/auth/AdminUserService";
-import { CreateAuthController } from "../src/auth/AuthController";
+import { CreateInMemoryUserRepository } from "../../src/auth/InMemoryUserRepository";
+import { CreatePasswordHasher } from "../../src/auth/PasswordHasher";
+import { CreateAuthService } from "../../src/auth/AuthService";
+import { CreateAdminUserService } from "../../src/auth/AdminUserService";
+import { CreateAuthController } from "../../src/auth/AuthController";
 
-import { CreateInMemoryEventEditingRepository } from "../src/features/EventEditing/EventEditingRepository";
-import { CreateEventEditingService } from "../src/features/EventEditing/EventEditingService";
-import { CreateEventEditingController } from "../src/features/EventEditing/EventEditingController";
+import { CreateInMemoryEventEditingRepository } from "../../src/features/EventEditing/EventEditingRepository";
+import { CreateEventEditingService } from "../../src/features/EventEditing/EventEditingService";
+import { CreateEventEditingController } from "../../src/features/EventEditing/EventEditingController";
 
-import { CreateEventListService } from "../src/features/EventList/EventListService";
-import { CreateEventListController } from "../src/features/EventList/EventListController";
+import { CreateEventListService } from "../../src/features/EventList/EventListService";
+import { CreateEventListController } from "../../src/features/EventList/EventListController";
 
-import { CreateEventDetailService } from "../src/features/EventDetailPage/EventDetailPageService";
-import { CreateEventDetailController } from "../src/features/EventDetailPage/EventDetailPageController";
+import { CreateEventDetailService } from "../../src/features/EventDetailPage/EventDetailPageService";
+import { CreateEventDetailController } from "../../src/features/EventDetailPage/EventDetailPageController";
 
-import { CreateEventPublishingService } from "../src/features/EventPublishing/EventPublishingService";
-import { CreateEventPublishingController } from "../src/features/EventPublishing/EventPublishingController";
+import { CreateEventPublishingService } from "../../src/features/EventPublishing/EventPublishingService";
+import { CreateEventPublishingController } from "../../src/features/EventPublishing/EventPublishingController";
 
-import { CreatePastEventArchivingService } from "../src/features/PastEventArchiving/PastEventArchivingService";
-import { CreatePastEventArchivingController } from "../src/features/PastEventArchiving/PastEventArchivingController";
+import { CreatePastEventArchivingService } from "../../src/features/PastEventArchiving/PastEventArchivingService";
+import { CreatePastEventArchivingController } from "../../src/features/PastEventArchiving/PastEventArchivingController";
 
-import { CreateInMemoryRsvpToggleRepository } from "../src/features/RsvpToggle/RsvpToggleRepository";
-import { CreateRsvpToggleService } from "../src/features/RsvpToggle/RsvpToggleService";
-import { CreateRsvpToggleController } from "../src/features/RsvpToggle/RsvpToggleController";
+import { CreateInMemoryRsvpToggleRepository } from "../../src/features/RsvpToggle/RsvpToggleRepository";
+import { CreateRsvpToggleService } from "../../src/features/RsvpToggle/RsvpToggleService";
+import { CreateRsvpToggleController } from "../../src/features/RsvpToggle/RsvpToggleController";
 
-import { CreateWaitlistPromotionRepository } from "../src/features/WaitlistPromotion/WaitlistPromotionRepository";
-import { CreateWaitlistPromotionService } from "../src/features/WaitlistPromotion/WaitlistPromotionService";
+import { CreateWaitlistPromotionRepository } from "../../src/features/WaitlistPromotion/WaitlistPromotionRepository";
+import { CreateWaitlistPromotionService } from "../../src/features/WaitlistPromotion/WaitlistPromotionService";
 
 // ── Seed credentials (InMemoryUserRepository) ─────────────────────────────────
 
