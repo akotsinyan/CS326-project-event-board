@@ -30,6 +30,7 @@ import { CreateRsvpToggleController } from "./features/RsvpToggle/RsvpToggleCont
 
 import { CreateWaitlistPromotionRepository } from "./features/WaitlistPromotion/WaitlistPromotionRepository";
 import { CreateWaitlistPromotionService } from "./features/WaitlistPromotion/WaitlistPromotionService";
+import { CreateWaitlistPromotionController } from "./features/WaitlistPromotion/WaitlistPromotionController";
 
 import { CreateRSVPDashboardService } from "./features/RSVPDashboard/RSVPDashboardService";
 import { CreateRSVPDashboardController } from "./features/RSVPDashboard/RSVPDashboardController";
@@ -60,6 +61,7 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   // ── Waitlist promotion (injected into RSVP toggle) ────────────────────────
   const waitlistPromotionRepo = CreateWaitlistPromotionRepository(rsvpToggleRepo);
   const waitlistPromotionService = CreateWaitlistPromotionService(waitlistPromotionRepo);
+  const waitlistPromotionController = CreateWaitlistPromotionController(waitlistPromotionService);
 
   // ── Event list ────────────────────────────────────────────────────────────
   const eventListService = CreateEventListService(sharedEventRepo);
@@ -111,6 +113,7 @@ export function createComposedApp(logger?: ILoggingService): IApp {
     rsvpDashboardController,
     createEvtController,
     saveForLaterController,
+    waitlistPromotionController,
     resolvedLogger,
   );
 }

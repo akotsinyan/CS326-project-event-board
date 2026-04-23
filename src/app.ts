@@ -12,6 +12,7 @@ import type { IRsvpToggleController } from "./features/RsvpToggle/RsvpToggleCont
 import type { IRSVPDashboardController } from "./features/RSVPDashboard/RSVPDashboardController";
 import type { IEventController } from "./features/CreateEvent/controller/EventController";
 import type { ISaveForLaterController } from "./features/SaveForLater/SaveForLaterController";
+import type { IWaitlistPromotionController } from "./features/WaitlistPromotion/WaitlistPromotionController";
 import { AuthenticationRequired, AuthorizationRequired } from "./auth/errors";
 import type { UserRole } from "./auth/User";
 import type { IApp } from "./contracts";
@@ -50,6 +51,7 @@ class ExpressApp implements IApp {
     private readonly rsvpDashboardController: IRSVPDashboardController,
     private readonly createEventController: IEventController,
     private readonly saveForLaterController: ISaveForLaterController,
+    private readonly waitlistPromotionController: IWaitlistPromotionController,
     private readonly logger: ILoggingService,
   ) {
     this.app = express();
@@ -254,6 +256,13 @@ class ExpressApp implements IApp {
       await this.rsvpToggleController.getRsvpStatus(req, res);
     }));
 
+    // ── Waitlist position ─────────────────────────────────────────────────────
+
+    this.app.get("/events/:eventId/waitlist/position", asyncHandler(async (req, res) => {
+      if (!this.requireAuthenticated(req, res)) return;
+      await this.waitlistPromotionController.getWaitlistPosition(req, res);
+    }));
+
     // ── Save for later ────────────────────────────────────────────────────────
 
     this.app.post("/events/:eventId/save", asyncHandler(async (req, res) => {
@@ -298,6 +307,7 @@ export function CreateApp(
   rsvpDashboardController: IRSVPDashboardController,
   createEventController: IEventController,
   saveForLaterController: ISaveForLaterController,
+  waitlistPromotionController: IWaitlistPromotionController,
   logger: ILoggingService,
 ): IApp {
   return new ExpressApp(
@@ -311,6 +321,7 @@ export function CreateApp(
     rsvpDashboardController,
     createEventController,
     saveForLaterController,
+    waitlistPromotionController,
     logger,
   );
 }

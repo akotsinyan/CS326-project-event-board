@@ -93,9 +93,11 @@
     <% if (canRsvp) { %>
       <div class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg mb-6">
         <%- include("./rsvp-button", { eventId: event.id, rsvpStatus }) %>
-        <% if (waitlistPosition !== null) { %>
-          <p class="text-sm text-yellow-700 mt-2">You are #<%= waitlistPosition %> on the waitlist.</p>
-        <% } %>
+        <div
+          hx-get="/events/<%= event.id %>/waitlist/position"
+          hx-trigger="load"
+          hx-swap="outerHTML"
+        ></div>
       </div>
     <% } %>
 

@@ -117,7 +117,7 @@ describe("Create And Search Event — integration", () => {
       const agent = request.agent(makeApp());
       await loginAs(agent, "admin@app.test");
 
-      const res = await agent.get("/events").type("form").send({ q: "Spring Hackathon" });
+      const res = await agent.get("/events").query({ q: "Spring Hackathon" });
 
       expect(res.status).toBe(200);
       expect(res.text).toContain("Spring Hackathon");
@@ -127,7 +127,7 @@ describe("Create And Search Event — integration", () => {
       const agent = request.agent(makeApp());
       await loginAs(agent, "admin@app.test");
 
-      const res = await agent.get("/events").type("form").send({ q: "Meet recruiters and hiring managers from top companies" });
+      const res = await agent.get("/events").query({ q: "Meet recruiters and hiring managers from top companies" });
 
       expect(res.status).toBe(200);
       expect(res.text).toContain("Career Fair");
@@ -137,7 +137,7 @@ describe("Create And Search Event — integration", () => {
       const agent = request.agent(makeApp());
       await loginAs(agent, "admin@app.test");
 
-      const res = await agent.get("/events").type("form").send({ q: "Main Hall" });
+      const res = await agent.get("/events").query({ q: "Main Hall" });
 
       expect(res.status).toBe(200);
       expect(res.text).toContain("Career Fair");
@@ -148,7 +148,7 @@ describe("Create And Search Event — integration", () => {
       const agent = request.agent(makeApp());
       await loginAs(agent, "admin@app.test");
 
-      const res = await agent.get("/events").type("form").send({ q: "Non-existent-Event" });
+      const res = await agent.get("/events").query({ q: "Non-existent-Event" });
 
       expect(res.status).toBe(200);
       expect(res.text).toContain("No events match your filters.");
@@ -158,7 +158,7 @@ describe("Create And Search Event — integration", () => {
       const agent = request.agent(makeApp());
       await loginAs(agent, "admin@app.test");
 
-      const res = await agent.get("/events").type("form").send({ q: "   " });
+      const res = await agent.get("/events").query({ q: "   " });
 
       expect(res.status).toBe(200);
     });
