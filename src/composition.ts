@@ -28,8 +28,9 @@ import { CreateInMemoryRsvpToggleRepository } from "./features/RsvpToggle/RsvpTo
 import { CreateRsvpToggleService } from "./features/RsvpToggle/RsvpToggleService";
 import { CreateRsvpToggleController } from "./features/RsvpToggle/RsvpToggleController";
 
-import { CreateWaitlistPromotionRepository } from "./features/waitlistPromotion/WaitlistPromotionRepository";
-import { CreateWaitlistPromotionService } from "./features/waitlistPromotion/WaitlistPromotionService";
+import { CreateWaitlistPromotionRepository } from "./features/WaitlistPromotion/WaitlistPromotionRepository";
+import { CreateWaitlistPromotionService } from "./features/WaitlistPromotion/WaitlistPromotionService";
+import { CreateWaitlistPromotionController } from "./features/WaitlistPromotion/WaitlistPromotionController";
 
 import { CreateRSVPDashboardService } from "./features/RSVPDashboard/RSVPDashboardService";
 import { CreateRSVPDashboardController } from "./features/RSVPDashboard/RSVPDashboardController";
@@ -60,6 +61,7 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   // ── Waitlist promotion (injected into RSVP toggle) ────────────────────────
   const waitlistPromotionRepo = CreateWaitlistPromotionRepository(rsvpToggleRepo);
   const waitlistPromotionService = CreateWaitlistPromotionService(waitlistPromotionRepo);
+  const waitlistPromotionController = CreateWaitlistPromotionController(waitlistPromotionService);
 
   // ── Event list ────────────────────────────────────────────────────────────
   const eventListService = CreateEventListService(sharedEventRepo);
@@ -73,8 +75,14 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const eventPublishingService = CreateEventPublishingService(sharedEventRepo);
   const eventPublishingController = CreateEventPublishingController(eventPublishingService);
 
+
+  // ── Save for later ────────────────────────────────────────────────────────
+  const saveForLaterRepo = CreateInMemorySaveForLaterRepository();
+  const saveForLaterService = CreateSaveForLaterService(saveForLaterRepo, sharedEventRepo);
+  const saveForLaterController = CreateSaveForLaterController(saveForLaterService, resolvedLogger);
+
   // ── Event detail ──────────────────────────────────────────────────────────
-  const eventDetailService = CreateEventDetailService(sharedEventRepo, rsvpToggleRepo);
+  const eventDetailService = CreateEventDetailService(sharedEventRepo, rsvpToggleRepo, saveForLaterRepo);
   const eventDetailController = CreateEventDetailController(eventDetailService, resolvedLogger);
 
   // ── Past event archiving ──────────────────────────────────────────────────
@@ -83,7 +91,7 @@ export function createComposedApp(logger?: ILoggingService): IApp {
 
   // ── RSVP toggle ───────────────────────────────────────────────────────────
   const rsvpToggleService = CreateRsvpToggleService(rsvpToggleRepo, sharedEventRepo, waitlistPromotionService);
-  const rsvpToggleController = CreateRsvpToggleController(rsvpToggleService);
+  const rsvpToggleController = CreateRsvpToggleController(rsvpToggleService, sharedEventRepo);
 
   // ── RSVP dashboard ────────────────────────────────────────────────────────
   const rsvpDashboardService = CreateRSVPDashboardService(rsvpToggleRepo, sharedEventRepo);
@@ -93,10 +101,6 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const createEvtService = createEventService(sharedEventRepo);
   const createEvtController = createEventController(createEvtService, resolvedLogger);
 
-  // ── Save for later ────────────────────────────────────────────────────────
-  const saveForLaterRepo = CreateInMemorySaveForLaterRepository();
-  const saveForLaterService = CreateSaveForLaterService(saveForLaterRepo, sharedEventRepo);
-  const saveForLaterController = CreateSaveForLaterController(saveForLaterService, resolvedLogger);
 
   return CreateApp(
     authController,
@@ -109,6 +113,7 @@ export function createComposedApp(logger?: ILoggingService): IApp {
     rsvpDashboardController,
     createEvtController,
     saveForLaterController,
+    waitlistPromotionController,
     resolvedLogger,
   );
 }

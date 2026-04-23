@@ -1,0 +1,49 @@
+<div id="event-management" class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg mb-6">
+  <h3 class="text-sm font-bold text-slate-900 mb-3">Event Management</h3>
+  <div class="space-y-2">
+    <% if (canEdit) { %>
+      <a
+        href="/events/<%= event.id %>/edit"
+        class="block w-full px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold text-center hover:bg-blue-700 no-underline"
+      >
+        Edit Event
+      </a>
+    <% } %>
+    <% if (canPublish) { %>
+      <button
+        type="button"
+        class="w-full px-4 py-2 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 cursor-pointer"
+        hx-post="/events/<%= event.id %>/publish"
+        hx-target="#event-management"
+        hx-swap="outerHTML"
+        hx-confirm="Publish this event? It will be visible to all members."
+      >
+        Publish Event
+      </button>
+    <% } %>
+    <% if (canCancel) { %>
+      <button
+        type="button"
+        class="w-full px-4 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 cursor-pointer"
+        hx-post="/events/<%= event.id %>/cancel"
+        hx-target="#event-management"
+        hx-swap="outerHTML"
+        hx-confirm="Cancel this event? This cannot be undone."
+      >
+        Cancel Event
+      </button>
+    <% } %>
+    <% if (!canEdit && !canPublish && !canCancel) { %>
+      <p class="text-sm text-slate-500">No actions available for this event.</p>
+    <% } %>
+  </div>
+</div>
+
+<%# OOB swap to update the status badge in the page header %>
+<span
+  id="status-badge"
+  hx-swap-oob="true"
+  class="inline-block text-xs font-semibold px-3 py-1.5 rounded-full border capitalize <%= statusBadgeClass %>"
+>
+  <%= event.status %>
+</span>

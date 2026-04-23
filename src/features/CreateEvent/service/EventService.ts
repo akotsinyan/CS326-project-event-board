@@ -53,8 +53,8 @@ class EventService implements IEventService {
     if (data.startDatetime >= data.endDatetime) {
       return ValidationError("Start time must be before end time.");
     }
-    if (data.capacity !== undefined && data.capacity !== null && data.capacity < 1) {
-      return ValidationError("Capacity must be at least 1.");
+    if (data.capacity !== undefined && data.capacity !== null && (!Number.isInteger(data.capacity) || data.capacity < 1)) {
+      return ValidationError("Capacity must be a positive integer.");
     }
     return null;
   }

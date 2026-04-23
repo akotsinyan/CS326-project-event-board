@@ -12,44 +12,37 @@
 import request, { type Agent } from "supertest";
 import type { Express } from "express";
 
-import { CreateApp } from "../src/app";
-import { CreateLoggingService } from "../src/service/LoggingService";
+import { CreateApp } from "../../src/app";
+import { CreateLoggingService } from "../../src/service/LoggingService";
 
-import { CreateInMemoryUserRepository } from "../src/auth/InMemoryUserRepository";
-import { CreatePasswordHasher } from "../src/auth/PasswordHasher";
-import { CreateAuthService } from "../src/auth/AuthService";
-import { CreateAdminUserService } from "../src/auth/AdminUserService";
-import { CreateAuthController } from "../src/auth/AuthController";
+import { CreateInMemoryUserRepository } from "../../src/auth/InMemoryUserRepository";
+import { CreatePasswordHasher } from "../../src/auth/PasswordHasher";
+import { CreateAuthService } from "../../src/auth/AuthService";
+import { CreateAdminUserService } from "../../src/auth/AdminUserService";
+import { CreateAuthController } from "../../src/auth/AuthController";
 
-import { CreateInMemoryEventEditingRepository } from "../src/features/EventEditing/EventEditingRepository";
-import { CreateEventEditingService } from "../src/features/EventEditing/EventEditingService";
-import { CreateEventEditingController } from "../src/features/EventEditing/EventEditingController";
+import { CreateInMemoryEventEditingRepository } from "../../src/features/EventEditing/EventEditingRepository";
+import { CreateEventEditingService } from "../../src/features/EventEditing/EventEditingService";
+import { CreateEventEditingController } from "../../src/features/EventEditing/EventEditingController";
 
-import { CreateEventListService } from "../src/features/EventList/EventListService";
-import { CreateEventListController } from "../src/features/EventList/EventListController";
+import { CreateEventListService } from "../../src/features/EventList/EventListService";
+import { CreateEventListController } from "../../src/features/EventList/EventListController";
 
-import { CreateEventDetailService } from "../src/features/EventDetailPage/EventDetailPageService";
-import { CreateEventDetailController } from "../src/features/EventDetailPage/EventDetailPageController";
+import { CreateEventDetailService } from "../../src/features/EventDetailPage/EventDetailPageService";
+import { CreateEventDetailController } from "../../src/features/EventDetailPage/EventDetailPageController";
 
-import { CreateEventPublishingService } from "../src/features/EventPublishing/EventPublishingService";
-import { CreateEventPublishingController } from "../src/features/EventPublishing/EventPublishingController";
+import { CreateEventPublishingService } from "../../src/features/EventPublishing/EventPublishingService";
+import { CreateEventPublishingController } from "../../src/features/EventPublishing/EventPublishingController";
 
-import { CreatePastEventArchivingService } from "../src/features/PastEventArchiving/PastEventArchivingService";
-import { CreatePastEventArchivingController } from "../src/features/PastEventArchiving/PastEventArchivingController";
+import { CreatePastEventArchivingService } from "../../src/features/PastEventArchiving/PastEventArchivingService";
+import { CreatePastEventArchivingController } from "../../src/features/PastEventArchiving/PastEventArchivingController";
 
-import { CreateInMemoryRsvpToggleRepository } from "../src/features/RsvpToggle/RsvpToggleRepository";
-import { CreateRsvpToggleService } from "../src/features/RsvpToggle/RsvpToggleService";
-import { CreateRsvpToggleController } from "../src/features/RsvpToggle/RsvpToggleController";
+import { CreateInMemoryRsvpToggleRepository } from "../../src/features/RsvpToggle/RsvpToggleRepository";
+import { CreateRsvpToggleService } from "../../src/features/RsvpToggle/RsvpToggleService";
+import { CreateRsvpToggleController } from "../../src/features/RsvpToggle/RsvpToggleController";
 
-import { CreateWaitlistPromotionRepository } from "../src/features/WaitlistPromotion/WaitlistPromotionRepository";
-import { CreateWaitlistPromotionService } from "../src/features/WaitlistPromotion/WaitlistPromotionService";
-
-// ── TODO: uncomment and fix these three once you know the exact factory names ─
-// Copy the calls from your composition.ts.
-//
-// import { CreateRSVPDashboardController } from "../src/features/RSVPDashboard/RSVPDashboardController";
-// import { CreateEventController } from "../src/features/CreateEvent/controller/EventController";
-// import { CreateSaveForLaterController } from "../src/features/SaveForLater/SaveForLaterController";
+import { CreateWaitlistPromotionRepository } from "../../src/features/WaitlistPromotion/WaitlistPromotionRepository";
+import { CreateWaitlistPromotionService } from "../../src/features/WaitlistPromotion/WaitlistPromotionService";
 
 // ── Seed credentials (InMemoryUserRepository) ─────────────────────────────────
 
@@ -77,29 +70,28 @@ function buildApp(): Express {
   const eventRepo = CreateInMemoryEventEditingRepository();
 
   const rsvpRepo        = CreateInMemoryRsvpToggleRepository([]);
-  const waitlistRepo    = CreateWaitlistPromotionRepository(rsvpRepo, eventRepo);
+  const waitlistRepo    = CreateWaitlistPromotionRepository(rsvpRepo);
   const waitlistService = CreateWaitlistPromotionService(waitlistRepo);
 
   const rsvpToggleService    = CreateRsvpToggleService(rsvpRepo, eventRepo, waitlistService);
   const rsvpToggleController = CreateRsvpToggleController(rsvpToggleService);
 
   const eventEditingService    = CreateEventEditingService(eventRepo);
-  const eventEditingController = CreateEventEditingController(eventEditingService, logger);
+  const eventEditingController = CreateEventEditingController(eventEditingService);
 
   const eventListService    = CreateEventListService(eventRepo);
-  const eventListController = CreateEventListController(eventListService, logger);
+  const eventListController = CreateEventListController(eventListService);
 
-  const eventDetailService    = CreateEventDetailService(eventRepo);
-  const eventDetailController = CreateEventDetailController(eventDetailService, logger);
+  const eventDetailService    = CreateEventDetailService(eventRepo, rsvpRepo);
+  const eventDetailController = CreateEventDetailController(eventDetailService,logger);
 
   const eventPublishingService    = CreateEventPublishingService(eventRepo);
-  const eventPublishingController = CreateEventPublishingController(eventPublishingService, logger);
+  const eventPublishingController = CreateEventPublishingController(eventPublishingService);
 
   const pastArchivingService    = CreatePastEventArchivingService(eventRepo);
-  const pastArchivingController = CreatePastEventArchivingController(pastArchivingService, logger);
+  const pastArchivingController = CreatePastEventArchivingController(pastArchivingService);
 
   // Stubs for controllers not owned by this feature.
-  // Replace each `as any` line with the real factory call from composition.ts.
   const rsvpDashboardController = { showDashboard: async () => {} }          as any;
   const createEventController   = { renderCreateEventPage: async () => {}, create: async () => {} } as any;
   const saveForLaterController  = { toggleFromButton: async () => {}, showSavedPage: async () => {} } as any;
@@ -170,17 +162,17 @@ describe("RSVP Toggle — POST /events/:eventId/rsvp", () => {
   // ── Toggle off ──────────────────────────────────────────────────────────────
 
   test("member RSVPs twice → second call cancels the RSVP (302)", async () => {
-    await member.post(`/events/${PUBLISHED_EVENT}/rsvp`);             // → going
-    const res = await member.post(`/events/${PUBLISHED_EVENT}/rsvp`); // → cancelled
+    await member.post(`/events/${PUBLISHED_EVENT}/rsvp`);
+    const res = await member.post(`/events/${PUBLISHED_EVENT}/rsvp`);
     expect(res.status).toBe(302);
   });
 
   // ── Edge case: reactivation ─────────────────────────────────────────────────
 
   test("RSVP → cancel → RSVP again → reactivated (302)", async () => {
-    await member.post(`/events/${PUBLISHED_EVENT}/rsvp`); // → going
-    await member.post(`/events/${PUBLISHED_EVENT}/rsvp`); // → cancelled
-    const res = await member.post(`/events/${PUBLISHED_EVENT}/rsvp`); // → reactivated
+    await member.post(`/events/${PUBLISHED_EVENT}/rsvp`);
+    await member.post(`/events/${PUBLISHED_EVENT}/rsvp`);
+    const res = await member.post(`/events/${PUBLISHED_EVENT}/rsvp`);
     expect(res.status).toBe(302);
   });
 
@@ -209,9 +201,6 @@ describe("RSVP Toggle — POST /events/:eventId/rsvp", () => {
   // ── Capacity / waitlist ─────────────────────────────────────────────────────
 
   test("RSVP to unlimited-capacity event succeeds (302)", async () => {
-    // evt-list-4 has capacity: null — always goes, never waitlisted.
-    // To test the waitlist branch precisely, add a capacity-1 event to
-    // SEED_EVENTS and a matching RSVP in SEED_RSVPS, then POST to that ID.
     const res = await member.post(`/events/evt-list-4/rsvp`);
     expect(res.status).toBe(302);
   });
@@ -230,13 +219,12 @@ describe("RSVP Status — GET /events/:eventId/rsvp/status", () => {
     member = await loginAs(app, MEMBER.email, MEMBER.password);
   });
 
-  test("unauthenticated → 401", async () => {
+  test("unauthenticated → 302", async () => {
     const res = await request(app).get(`/events/${PUBLISHED_EVENT}/rsvp/status`);
     expect(res.status).toBe(302);
   });
 
   test("no existing RSVP → 200 with null", async () => {
-    // evt-list-1 is not in SEED_RSVPS for user-reader, so null is expected
     const res = await member.get(`/events/${PUBLISHED_EVENT}/rsvp/status`);
     expect(res.status).toBe(200);
     expect(res.body).toBeNull();
@@ -250,8 +238,8 @@ describe("RSVP Status — GET /events/:eventId/rsvp/status", () => {
   });
 
   test("after cancelling → 200 with status 'cancelled'", async () => {
-    await member.post(`/events/${PUBLISHED_EVENT}/rsvp`); // → going
-    await member.post(`/events/${PUBLISHED_EVENT}/rsvp`); // → cancelled
+    await member.post(`/events/${PUBLISHED_EVENT}/rsvp`);
+    await member.post(`/events/${PUBLISHED_EVENT}/rsvp`);
     const res = await member.get(`/events/${PUBLISHED_EVENT}/rsvp/status`);
     expect(res.status).toBe(200);
     expect(res.body.status).toBe("cancelled");
