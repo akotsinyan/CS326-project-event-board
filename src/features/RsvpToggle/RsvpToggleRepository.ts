@@ -200,6 +200,6 @@ class InMemoryRsvpToggleRepository implements IRsvpToggleRepository {
   }
 }
 
-export function CreateInMemoryRsvpToggleRepository(): IRsvpToggleRepository {
-  return new InMemoryRsvpToggleRepository([...SEED_RSVPS]);
+export function CreateInMemoryRsvpToggleRepository(seed: IRsvp[] = SEED_RSVPS): IRsvpToggleRepository {
+  return new InMemoryRsvpToggleRepository([...seed]);
 }
