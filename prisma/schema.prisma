@@ -4,17 +4,37 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url = "CHANGE_THIS"
+  url      = env("DATABASE_URL")
 }
 
-// TODO: Define your project's data models here.
-// Example:
-//
-// model Item {
-//   id        Int      @id @default(autoincrement())
-//   title     String
-//   body      String
-//   status    String   @default("active")
-//   createdAt DateTime @default(now())
-//   updatedAt DateTime @updatedAt
-// }
+model User {
+  id           String @id
+  email        String @unique
+  displayName  String
+  role         String @default("user")
+  passwordHash String
+}
+
+model Event {
+  id            String   @id
+  title         String
+  description   String
+  location      String
+  category      String   @default("general")
+  capacity      Int?
+  status        String   @default("draft")
+  startDatetime DateTime
+  endDatetime   DateTime
+  organizerId   String
+  organizerName String   @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Rsvp {
+  id        String   @id
+  eventId   String
+  userId    String
+  status    String
+  createdAt DateTime @default(now())
+}
