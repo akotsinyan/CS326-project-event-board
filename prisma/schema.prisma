@@ -19,12 +19,12 @@ model Event {
   description String
   location  String
   category  String
-  capacity  Int   
+  capacity  Int?
   status    Status   @default(draft)
   startDateTime DateTime
   endDateTime DateTime
   organizerId String
   organizerName String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @updatedAt @default(now())
 }
