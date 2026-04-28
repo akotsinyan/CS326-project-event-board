@@ -1,14 +1,14 @@
 import { CreateAdminUserService } from "./auth/AdminUserService";
 import { CreateAuthController } from "./auth/AuthController";
 import { CreateAuthService } from "./auth/AuthService";
-import { CreateInMemoryUserRepository } from "./auth/InMemoryUserRepository";
+import { CreatePrismaUserRepository } from "./auth/PrismaUserRepository";
 import { CreatePasswordHasher } from "./auth/PasswordHasher";
 import { CreateApp } from "./app";
 import type { IApp } from "./contracts";
 import { CreateLoggingService } from "./service/LoggingService";
 import type { ILoggingService } from "./service/LoggingService";
 
-import { CreateInMemoryEventEditingRepository } from "./features/EventEditing/EventEditingRepository";
+import { CreatePrismaEventEditingRepository } from "./features/EventEditing/PrismaEventEditingRepository";
 import { CreateEventEditingService } from "./features/EventEditing/EventEditingService";
 import { CreateEventEditingController } from "./features/EventEditing/EventEditingController";
 
@@ -24,7 +24,7 @@ import { CreateEventPublishingController } from "./features/EventPublishing/Even
 import { CreatePastEventArchivingService } from "./features/PastEventArchiving/PastEventArchivingService";
 import { CreatePastEventArchivingController } from "./features/PastEventArchiving/PastEventArchivingController";
 
-import { CreateInMemoryRsvpToggleRepository } from "./features/RsvpToggle/RsvpToggleRepository";
+import { CreatePrismaRsvpToggleRepository } from "./features/RsvpToggle/PrismaRsvpToggleRepository";
 import { CreateRsvpToggleService } from "./features/RsvpToggle/RsvpToggleService";
 import { CreateRsvpToggleController } from "./features/RsvpToggle/RsvpToggleController";
 
@@ -46,17 +46,17 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const resolvedLogger = logger ?? CreateLoggingService();
 
   // ── Auth ──────────────────────────────────────────────────────────────────
-  const authUsers = CreateInMemoryUserRepository();
+  const authUsers = CreatePrismaUserRepository();
   const passwordHasher = CreatePasswordHasher();
   const authService = CreateAuthService(authUsers, passwordHasher);
   const adminUserService = CreateAdminUserService(authUsers, passwordHasher);
   const authController = CreateAuthController(authService, adminUserService, resolvedLogger);
 
   // ── Shared event store (single source of truth for all event features) ────
-  const sharedEventRepo = CreateInMemoryEventEditingRepository();
+  const sharedEventRepo = CreatePrismaEventEditingRepository();
 
   // ── Shared RSVP store ─────────────────────────────────────────────────────
-  const rsvpToggleRepo = CreateInMemoryRsvpToggleRepository();
+  const rsvpToggleRepo = CreatePrismaRsvpToggleRepository();
 
   // ── Waitlist promotion (injected into RSVP toggle) ────────────────────────
   const waitlistPromotionRepo = CreateWaitlistPromotionRepository(rsvpToggleRepo);
