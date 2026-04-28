@@ -1,7 +1,7 @@
 import { Ok, Err, type Result } from "../../lib/result";
 import type { IRsvpToggleRepository, IRsvp, RsvpRepoError } from "./RsvpToggleRepository";
 import type { IEventEditingRepository, IEvent } from "../EventEditing/EventEditingRepository";
-import type { IWaitlistPromotionService } from "../WaitlistPromotion/waitlistPromotionService";
+import type { IWaitlistPromotionService } from "../WaitlistPromotion/WaitlistPromotionService";
 
 // ── Error types ───────────────────────────────────────────────────────────────
 

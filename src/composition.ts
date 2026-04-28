@@ -27,8 +27,8 @@ import { CreateInMemoryRsvpToggleRepository } from "./features/RsvpToggle/RsvpTo
 import { CreateRsvpToggleService } from "./features/RsvpToggle/RsvpToggleService";
 import { CreateRsvpToggleController } from "./features/RsvpToggle/RsvpToggleController";
 
-import { CreateWaitlistPromotionRepository } from "./features/waitlistPromotion/WaitlistPromotionRepository";
-import { CreateWaitlistPromotionService } from "./features/waitlistPromotion/WaitlistPromotionService";
+import { CreateWaitlistPromotionRepository } from "./features/WaitlistPromotion/WaitlistPromotionRepository";
+import { CreateWaitlistPromotionService } from "./features/WaitlistPromotion/WaitlistPromotionService";
 
 import { CreateRSVPDashboardService } from "./features/RSVPDashboard/RSVPDashboardService";
 import { CreateRSVPDashboardController } from "./features/RSVPDashboard/RSVPDashboardController";
