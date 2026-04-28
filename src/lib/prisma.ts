@@ -2,15 +2,12 @@ import "dotenv/config";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "@prisma/client";
 import path from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function resolveDbPath(url: string): string {
   const filePath = url.replace(/^file:/, "");
   if (path.isAbsolute(filePath)) return filePath;
-  // Resolve relative to project root (two levels up from src/lib)
-  return path.resolve(__dirname, "../../", filePath);
+  // Resolve relative paths from the project root (process.cwd())
+  return path.resolve(process.cwd(), filePath);
 }
 
 let _client: PrismaClient | undefined;
