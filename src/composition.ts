@@ -8,7 +8,6 @@ import type { IApp } from "./contracts";
 import { CreateLoggingService } from "./service/LoggingService";
 import type { ILoggingService } from "./service/LoggingService";
 
-import { CreateInMemoryEventEditingRepository } from "./features/EventEditing/EventEditingRepository";
 import { CreateEventEditingService } from "./features/EventEditing/EventEditingService";
 import { CreateEventEditingController } from "./features/EventEditing/EventEditingController";
 
@@ -41,6 +40,9 @@ import { CreateInMemorySaveForLaterRepository } from "./features/SaveForLater/Sa
 import { CreateSaveForLaterService } from "./features/SaveForLater/SaveForLaterService";
 import { CreateSaveForLaterController } from "./features/SaveForLater/SaveForLaterController";
 
+import { PrismaClient } from "@prisma/client";
+import { CreatePrismaEventEditingRepository } from "./features/EventEditing/PrismaEventEditingRepository";
+
 export function createComposedApp(logger?: ILoggingService): IApp {
   const resolvedLogger = logger ?? CreateLoggingService();
 
@@ -52,7 +54,8 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const authController = CreateAuthController(authService, adminUserService, resolvedLogger);
 
   // ── Shared event store (single source of truth for all event features) ────
-  const sharedEventRepo = CreateInMemoryEventEditingRepository();
+  const prisma = new PrismaClient();
+  const sharedEventRepo = CreatePrismaEventEditingRepository(prisma);
 
   // ── Shared RSVP store ─────────────────────────────────────────────────────
   const rsvpToggleRepo = CreateInMemoryRsvpToggleRepository();
