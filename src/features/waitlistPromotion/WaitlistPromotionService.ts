@@ -1,42 +1,56 @@
 import { Ok, Err, type Result } from "../../lib/result";
-import type {
-  IWaitlistPromotionRepository,
-  WaitlistPromotionError,
-  WaitlistPromotionResult,
-} from "./WaitlistPromotionRepository";
+import type { IWaitlistPromotionRepository } from "./WaitlistPromotionRepository";
 
-export type { WaitlistPromotionError };
-
-// ── Service interface ─────────────────────────────────────────────────────────
+export type WaitlistPromotionError = {
+  type: "UnexpectedError";
+  message: string;
+};
 
 export interface IWaitlistPromotionService {
-  promoteFromWaitlist(eventId: string): Promise<Result<WaitlistPromotionResult, WaitlistPromotionError>>;
-  getWaitlistPosition(eventId: string, userId: string): Promise<Result<number | null, WaitlistPromotionError>>;
-}
+  promoteFromWaitlist(
+    eventId: string,
+  ): Promise<Result<{ promoted: boolean; userId: string | null }, WaitlistPromotionError>>;
 
-// ── Implementation ────────────────────────────────────────────────────────────
+  getWaitlistPosition(
+    eventId: string,
+    userId: string,
+  ): Promise<Result<number | null, WaitlistPromotionError>>;
+}
 
 class WaitlistPromotionService implements IWaitlistPromotionService {
   constructor(private readonly repo: IWaitlistPromotionRepository) {}
 
-  async promoteFromWaitlist(eventId: string): Promise<Result<WaitlistPromotionResult, WaitlistPromotionError>> {
+  async promoteFromWaitlist(
+    eventId: string,
+  ): Promise<Result<{ promoted: boolean; userId: string | null }, WaitlistPromotionError>> {
     const result = await this.repo.promoteFromWaitlist(eventId);
+
     if (!result.ok) {
-      return Err({ type: "UnexpectedError" as const, message: (result.value as WaitlistPromotionError).message });
+      return Err({
+        type: "UnexpectedError" as const,
+        message: result.value.message,
+      });
     }
-    return Ok(result.value as WaitlistPromotionResult);
+
+    return Ok(result.value);
   }
 
-  async getWaitlistPosition(eventId: string, userId: string): Promise<Result<number | null, WaitlistPromotionError>> {
+  async getWaitlistPosition(
+    eventId: string,
+    userId: string,
+  ): Promise<Result<number | null, WaitlistPromotionError>> {
     const result = await this.repo.getWaitlistPosition(eventId, userId);
+
     if (!result.ok) {
-      return Err({ type: "UnexpectedError" as const, message: (result.value as WaitlistPromotionError).message });
+      return Err({
+        type: "UnexpectedError" as const,
+        message: result.value.message,
+      });
     }
-    return Ok(result.value as number | null);
+
+    return Ok(result.value);
   }
 }
-
-// ── Factory function ──────────────────────────────────────────────────────────
 
 export function CreateWaitlistPromotionService(
   repo: IWaitlistPromotionRepository,
