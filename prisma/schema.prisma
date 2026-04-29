@@ -17,6 +17,17 @@ model Event {
   startDatetime DateTime
   endDatetime   DateTime
   organizerId   String
+  organizerName String   @default("")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  rsvps         Rsvp[]
+}
+
+model Rsvp {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String
+  status    String   @default("going")
+  createdAt DateTime @default(now())
+  event     Event    @relation(fields: [eventId], references: [id])
 }

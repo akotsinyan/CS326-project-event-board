@@ -23,7 +23,7 @@ import { CreateEventPublishingController } from "./features/EventPublishing/Even
 import { CreatePastEventArchivingService } from "./features/PastEventArchiving/PastEventArchivingService";
 import { CreatePastEventArchivingController } from "./features/PastEventArchiving/PastEventArchivingController";
 
-import { CreateInMemoryRsvpToggleRepository } from "./features/RsvpToggle/RsvpToggleRepository";
+import { CreatePrismaRsvpToggleRepository } from "./features/RsvpToggle/PrismaRsvpToggleRepository";
 import { CreateRsvpToggleService } from "./features/RsvpToggle/RsvpToggleService";
 import { CreateRsvpToggleController } from "./features/RsvpToggle/RsvpToggleController";
 
@@ -58,7 +58,7 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const sharedEventRepo = CreatePrismaEventEditingRepository(prisma);
 
   // ── Shared RSVP store ─────────────────────────────────────────────────────
-  const rsvpToggleRepo = CreateInMemoryRsvpToggleRepository();
+  const rsvpToggleRepo = CreatePrismaRsvpToggleRepository(prisma);
 
   // ── Waitlist promotion (injected into RSVP toggle) ────────────────────────
   const waitlistPromotionRepo = CreateWaitlistPromotionRepository(rsvpToggleRepo);
