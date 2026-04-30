@@ -27,6 +27,7 @@ import { CreatePastEventArchivingController } from "./features/PastEventArchivin
 import { CreateInMemoryRsvpToggleRepository } from "./features/RsvpToggle/RsvpToggleRepository";
 import { CreateRsvpToggleService } from "./features/RsvpToggle/RsvpToggleService";
 import { CreateRsvpToggleController } from "./features/RsvpToggle/RsvpToggleController";
+import { CreatePrismaRsvpToggleRepository } from "./features/RsvpToggle/RsvpTogglePrismaRepo";
 
 import { CreateWaitlistPromotionRepository } from "./features/WaitlistPromotion/WaitlistPromotionRepository";
 import { CreateWaitlistPromotionService } from "./features/WaitlistPromotion/WaitlistPromotionService";
@@ -47,7 +48,7 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 
 export function createComposedApp(
-  mode: "memory" | "prisma",
+  mode: "memory" | "prisma" = "memory",
   logger?: ILoggingService,
 ): IApp {
   const resolvedLogger = logger ?? CreateLoggingService();
@@ -76,7 +77,16 @@ export function createComposedApp(
       : CreateInMemoryEventEditingRepository();
 
   // ── Shared RSVP store ─────────────────────────────────────────────────────
-  const rsvpToggleRepo = CreateInMemoryRsvpToggleRepository();
+  const rsvpToggleRepo =
+    mode === "prisma"
+      ? CreatePrismaRsvpToggleRepository(
+          new PrismaClient({
+            adapter: new PrismaBetterSqlite3({
+              url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
+            }),
+          }),
+        )
+      : CreateInMemoryRsvpToggleRepository();
 
   // ── Waitlist promotion (injected into RSVP toggle) ────────────────────────
   const waitlistPromotionRepo =
