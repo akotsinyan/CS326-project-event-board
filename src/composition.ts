@@ -27,7 +27,6 @@ import { CreateInMemoryRsvpToggleRepository } from "./features/RsvpToggle/RsvpTo
 import { CreatePrismaRsvpToggleRepository } from "./features/RsvpToggle/PrismaRsvpToggleRepository";
 import { CreateRsvpToggleService } from "./features/RsvpToggle/RsvpToggleService";
 import { CreateRsvpToggleController } from "./features/RsvpToggle/RsvpToggleController";
-import { CreatePrismaRsvpToggleRepository } from "./features/RsvpToggle/RsvpTogglePrismaRepo";
 
 import { CreateWaitlistPromotionRepository } from "./features/WaitlistPromotion/WaitlistPromotionRepository";
 import { CreateWaitlistPromotionService } from "./features/WaitlistPromotion/WaitlistPromotionService";

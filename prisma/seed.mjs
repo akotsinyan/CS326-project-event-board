@@ -225,18 +225,18 @@ const RSVPS = [
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 async function main() {
-  for (const u of USERS) {
-    await prisma.user.upsert({ where: { id: u.id }, update: {}, create: u });
+  for (const { id, ...rest } of USERS) {
+    await prisma.user.upsert({ where: { id }, update: rest, create: { id, ...rest } });
   }
   console.log(`Seeded ${USERS.length} users`);
 
-  for (const e of EVENTS) {
-    await prisma.event.upsert({ where: { id: e.id }, update: {}, create: e });
+  for (const { id, ...rest } of EVENTS) {
+    await prisma.event.upsert({ where: { id }, update: rest, create: { id, ...rest } });
   }
   console.log(`Seeded ${EVENTS.length} events`);
 
-  for (const r of RSVPS) {
-    await prisma.rsvp.upsert({ where: { id: r.id }, update: {}, create: r });
+  for (const { id, ...rest } of RSVPS) {
+    await prisma.rsvp.upsert({ where: { id }, update: rest, create: { id, ...rest } });
   }
   console.log(`Seeded ${RSVPS.length} RSVPs`);
 }
