@@ -3,7 +3,7 @@ import request from "supertest";
 import { createComposedApp } from "../../../src/composition";
 
 function makeApp() {
-  return createComposedApp().getExpressApp();
+  return createComposedApp("memory").getExpressApp();
 }
 
 async function loginAs(agent: ReturnType<typeof request.agent>, email: string) {
