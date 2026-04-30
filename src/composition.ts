@@ -8,7 +8,6 @@ import type { IApp } from "./contracts";
 import { CreateLoggingService } from "./service/LoggingService";
 import type { ILoggingService } from "./service/LoggingService";
 
-import { CreateInMemoryEventEditingRepository } from "./features/EventEditing/EventEditingRepository";
 import { CreateEventEditingService } from "./features/EventEditing/EventEditingService";
 import { CreateEventEditingController } from "./features/EventEditing/EventEditingController";
 
