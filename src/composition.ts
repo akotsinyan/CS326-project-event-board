@@ -47,7 +47,7 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 
 export function createComposedApp(
-  mode: "memory" | "prisma",
+  mode: "memory" | "prisma" = "memory",
   logger?: ILoggingService,
 ): IApp {
   const resolvedLogger = logger ?? CreateLoggingService();
