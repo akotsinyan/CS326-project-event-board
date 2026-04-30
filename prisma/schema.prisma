@@ -6,21 +6,21 @@ datasource db {
   provider = "sqlite"
 }
 
-
 enum Status {
   draft
   published
   cancelled
   past
 }
+
 model Event {
-  id        String  @id @default(uuid())
-  title     String
+  id          String   @id @default(uuid())
+  title       String
   description String
-  location  String
-  category  String
-  capacity  Int   
-  status    Status   @default(draft)
+  location    String
+  category    String
+  capacity    Int?
+  status      Status   @default(draft)
   startDateTime DateTime
   endDateTime DateTime
   organizerId String
