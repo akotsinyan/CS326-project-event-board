@@ -6,7 +6,6 @@ import { getAuthenticatedUser, touchAppSession } from "../../session/AppSession"
 import type { AppSessionStore, IAuthenticatedUserSession } from "../../session/AppSession";
 import type { IUserSummary } from "../../auth/User";
 
-// ── Interface ────────────────────────────────────────
 
 export interface ISaveForLaterController {
   toggleFromButton(req: Request, res: Response): Promise<void>;
@@ -47,9 +46,7 @@ class SaveForLaterController implements ISaveForLaterController {
     const sessionUser = getAuthenticatedUser(req.session as AppSessionStore);
     const user = mapSessionToUser(sessionUser);
 
-    const eventId =
-      typeof req.params.eventId === "string" ? req.params.eventId : "";
-
+    const eventId = typeof req.params.eventId === "string" ? req.params.eventId : "";
     const result = await this.service.toggleSave(user, eventId);
 
     if (!result.ok) {
@@ -66,7 +63,7 @@ class SaveForLaterController implements ISaveForLaterController {
 
     // HTMX-friendly partial update
     res.render("events/partials/saveButton", {
-      state: result.value, // "saved" | "unsaved"
+      state: result.value,
       eventId,
       layout: false,
     });

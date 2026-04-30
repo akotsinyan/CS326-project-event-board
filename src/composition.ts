@@ -29,6 +29,7 @@ import { CreateRsvpToggleController } from "./features/RsvpToggle/RsvpToggleCont
 
 import { CreateWaitlistPromotionRepository } from "./features/WaitlistPromotion/WaitlistPromotionRepository";
 import { CreateWaitlistPromotionService } from "./features/WaitlistPromotion/WaitlistPromotionService";
+import { CreateWaitlistPromotionController } from "./features/WaitlistPromotion/WaitlistPromotionController";
 
 import { CreateRSVPDashboardService } from "./features/RSVPDashboard/RSVPDashboardService";
 import { CreateRSVPDashboardController } from "./features/RSVPDashboard/RSVPDashboardController";
@@ -42,8 +43,13 @@ import { CreateSaveForLaterController } from "./features/SaveForLater/SaveForLat
 
 import { PrismaClient } from "@prisma/client";
 import { CreatePrismaEventEditingRepository } from "./features/EventEditing/PrismaEventEditingRepository";
+import { CreatePrismaSaveForLaterRepository } from "./features/SaveForLater/SaveForLaterPrismaRepo";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 
-export function createComposedApp(logger?: ILoggingService): IApp {
+export function createComposedApp(
+  mode: "memory" | "prisma",
+  logger?: ILoggingService,
+): IApp {
   const resolvedLogger = logger ?? CreateLoggingService();
 
   // ── Auth ──────────────────────────────────────────────────────────────────
@@ -51,18 +57,36 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const passwordHasher = CreatePasswordHasher();
   const authService = CreateAuthService(authUsers, passwordHasher);
   const adminUserService = CreateAdminUserService(authUsers, passwordHasher);
-  const authController = CreateAuthController(authService, adminUserService, resolvedLogger);
+  const authController = CreateAuthController(
+    authService,
+    adminUserService,
+    resolvedLogger,
+  );
 
   // ── Shared event store (single source of truth for all event features) ────
-  const prisma = new PrismaClient();
-  const sharedEventRepo = CreatePrismaEventEditingRepository(prisma);
+  const sharedEventRepo =
+    mode === "prisma"
+      ? CreatePrismaEventEditingRepository(
+          new PrismaClient({
+            adapter: new PrismaBetterSqlite3({
+              url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
+            }),
+          }),
+        )
+      : CreatePrismaEventEditingRepository(sharedEventRepo);
 
   // ── Shared RSVP store ─────────────────────────────────────────────────────
   const rsvpToggleRepo = CreatePrismaRsvpToggleRepository(prisma);
 
   // ── Waitlist promotion (injected into RSVP toggle) ────────────────────────
-  const waitlistPromotionRepo = CreateWaitlistPromotionRepository(rsvpToggleRepo);
-  const waitlistPromotionService = CreateWaitlistPromotionService(waitlistPromotionRepo);
+  const waitlistPromotionRepo =
+    CreateWaitlistPromotionRepository(rsvpToggleRepo);
+  const waitlistPromotionService = CreateWaitlistPromotionService(
+    waitlistPromotionRepo,
+  );
+  const waitlistPromotionController = CreateWaitlistPromotionController(
+    waitlistPromotionService,
+  );
 
   // ── Event list ────────────────────────────────────────────────────────────
   const eventListService = CreateEventListService(sharedEventRepo);
@@ -70,36 +94,76 @@ export function createComposedApp(logger?: ILoggingService): IApp {
 
   // ── Event editing ─────────────────────────────────────────────────────────
   const eventEditingService = CreateEventEditingService(sharedEventRepo);
-  const eventEditingController = CreateEventEditingController(eventEditingService);
+  const eventEditingController =
+    CreateEventEditingController(eventEditingService);
 
   // ── Event publishing / cancellation ──────────────────────────────────────
   const eventPublishingService = CreateEventPublishingService(sharedEventRepo);
-  const eventPublishingController = CreateEventPublishingController(eventPublishingService);
+  const eventPublishingController = CreateEventPublishingController(
+    eventPublishingService,
+  );
+
+  // ── Save for later ────────────────────────────────────────────────────────
+  const saveForLaterRepo =
+    mode === "prisma"
+      ? CreatePrismaSaveForLaterRepository(
+          new PrismaClient({
+            adapter: new PrismaBetterSqlite3({
+              url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
+            }),
+          }),
+        )
+      : CreateInMemorySaveForLaterRepository();
+  const saveForLaterService = CreateSaveForLaterService(
+    saveForLaterRepo,
+    sharedEventRepo,
+  );
+  const saveForLaterController = CreateSaveForLaterController(
+    saveForLaterService,
+    resolvedLogger,
+  );
 
   // ── Event detail ──────────────────────────────────────────────────────────
-  const eventDetailService = CreateEventDetailService(sharedEventRepo, rsvpToggleRepo);
-  const eventDetailController = CreateEventDetailController(eventDetailService, resolvedLogger);
+  const eventDetailService = CreateEventDetailService(
+    sharedEventRepo,
+    rsvpToggleRepo,
+    saveForLaterRepo,
+  );
+  const eventDetailController = CreateEventDetailController(
+    eventDetailService,
+    resolvedLogger,
+  );
 
   // ── Past event archiving ──────────────────────────────────────────────────
   const pastArchivingService = CreatePastEventArchivingService(sharedEventRepo);
-  const pastArchivingController = CreatePastEventArchivingController(pastArchivingService);
+  const pastArchivingController =
+    CreatePastEventArchivingController(pastArchivingService);
 
   // ── RSVP toggle ───────────────────────────────────────────────────────────
-  const rsvpToggleService = CreateRsvpToggleService(rsvpToggleRepo, sharedEventRepo, waitlistPromotionService);
-  const rsvpToggleController = CreateRsvpToggleController(rsvpToggleService);
+  const rsvpToggleService = CreateRsvpToggleService(
+    rsvpToggleRepo,
+    sharedEventRepo,
+    waitlistPromotionService,
+  );
+  const rsvpToggleController = CreateRsvpToggleController(
+    rsvpToggleService,
+    sharedEventRepo,
+  );
 
   // ── RSVP dashboard ────────────────────────────────────────────────────────
-  const rsvpDashboardService = CreateRSVPDashboardService(rsvpToggleRepo, sharedEventRepo);
-  const rsvpDashboardController = CreateRSVPDashboardController(rsvpDashboardService);
+  const rsvpDashboardService = CreateRSVPDashboardService(
+    rsvpToggleRepo,
+    sharedEventRepo,
+  );
+  const rsvpDashboardController =
+    CreateRSVPDashboardController(rsvpDashboardService);
 
   // ── Create event ──────────────────────────────────────────────────────────
   const createEvtService = createEventService(sharedEventRepo);
-  const createEvtController = createEventController(createEvtService, resolvedLogger);
-
-  // ── Save for later ────────────────────────────────────────────────────────
-  const saveForLaterRepo = CreateInMemorySaveForLaterRepository();
-  const saveForLaterService = CreateSaveForLaterService(saveForLaterRepo, sharedEventRepo);
-  const saveForLaterController = CreateSaveForLaterController(saveForLaterService, resolvedLogger);
+  const createEvtController = createEventController(
+    createEvtService,
+    resolvedLogger,
+  );
 
   return CreateApp(
     authController,
@@ -112,6 +176,7 @@ export function createComposedApp(logger?: ILoggingService): IApp {
     rsvpDashboardController,
     createEvtController,
     saveForLaterController,
+    waitlistPromotionController,
     resolvedLogger,
   );
 }

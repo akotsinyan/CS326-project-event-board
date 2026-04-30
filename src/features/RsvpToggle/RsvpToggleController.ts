@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import type { IRsvpToggleService, RsvpToggleError } from "./RsvpToggleService";
+import type { IEventEditingRepository } from "../EventEditing/EventEditingRepository";
 import { getAuthenticatedUser } from "../../session/AppSession";
 import type { AppSessionStore } from "../../session/AppSession";
 
@@ -9,7 +10,10 @@ export interface IRsvpToggleController {
 }
 
 class RsvpToggleController implements IRsvpToggleController {
-  constructor(private readonly rsvpService: IRsvpToggleService) {}
+  constructor(
+    private readonly rsvpService: IRsvpToggleService,
+    private readonly eventRepo: IEventEditingRepository,
+  ) {}
 
   async toggleRsvp(req: Request, res: Response): Promise<void> {
     const store = req.session as AppSessionStore;
@@ -37,11 +41,35 @@ class RsvpToggleController implements IRsvpToggleController {
       return;
     }
 
+    const isHtmx = req.get("HX-Request") === "true";
+    const currentUrl = req.get("HX-Current-URL") ?? "";
+    const fromDashboard = currentUrl.includes("/rsvps/dashboard");
+
+    if (isHtmx && fromDashboard && result.value.action === "cancelled") {
+      const eventResult = await this.eventRepo.findById(eventId);
+      if (eventResult.ok) {
+        const event = eventResult.value;
+        const entry = {
+          rsvpId: result.value.rsvp.id,
+          eventId: event.id,
+          rsvpStatus: "cancelled" as const,
+          eventTitle: event.title,
+          eventCategory: event.category,
+          eventLocation: event.location,
+          eventStartDatetime: event.startDatetime,
+          eventEndDatetime: event.endDatetime,
+          eventStatus: event.status,
+        };
+        res.render("rsvps/partials/dashboardRow", { entry, layout: false });
+        return;
+      }
+    }
+
     const defaultUrl = `/events/${eventId}`;
     const referer = req.get("Referer") ?? "";
     const redirectUrl = referer && !referer.endsWith(`/events/${eventId}/rsvp`) ? referer : defaultUrl;
 
-    if (req.get("HX-Request") === "true") {
+    if (isHtmx) {
       res.set("HX-Redirect", redirectUrl).sendStatus(204);
     } else {
       res.redirect(redirectUrl);
@@ -71,6 +99,7 @@ class RsvpToggleController implements IRsvpToggleController {
 
 export function CreateRsvpToggleController(
   rsvpService: IRsvpToggleService,
+  eventRepo: IEventEditingRepository,
 ): IRsvpToggleController {
-  return new RsvpToggleController(rsvpService);
+  return new RsvpToggleController(rsvpService, eventRepo);
 }
