@@ -25,7 +25,6 @@ class PrismaRsvpToggleRepository implements IRsvpToggleRepository {
     try {
       const rows = await this.prisma.rsvp.findMany({
         where: { userId },
-        include: { event: true },
         orderBy: { createdAt: "asc" },
       });
       return Ok(rows.map(toIRsvp));
@@ -36,8 +35,8 @@ class PrismaRsvpToggleRepository implements IRsvpToggleRepository {
 
   async findByEventAndUser(eventId: string, userId: string): Promise<Result<IRsvp | null, RsvpRepoError>> {
     try {
-      const row = await this.prisma.rsvp.findUnique({
-        where: { eventId_userId: { eventId, userId } },
+      const row = await this.prisma.rsvp.findFirst({
+        where: { eventId, userId },
       });
       return Ok(row ? toIRsvp(row) : null);
     } catch {
@@ -70,8 +69,8 @@ class PrismaRsvpToggleRepository implements IRsvpToggleRepository {
 
   async countWaitlistedAhead(eventId: string, userId: string): Promise<Result<number, RsvpRepoError>> {
     try {
-      const current = await this.prisma.rsvp.findUnique({
-        where: { eventId_userId: { eventId, userId } },
+      const current = await this.prisma.rsvp.findFirst({
+        where: { eventId, userId },
       });
       if (!current || current.status !== "waitlisted") return Ok(0);
       const count = await this.prisma.rsvp.count({
@@ -90,7 +89,7 @@ class PrismaRsvpToggleRepository implements IRsvpToggleRepository {
   async create(eventId: string, userId: string, status: RsvpStatus): Promise<Result<IRsvp, RsvpRepoError>> {
     try {
       const row = await this.prisma.rsvp.create({
-        data: { eventId, userId, status },
+        data: { id: crypto.randomUUID(), eventId, userId, status },
       });
       return Ok(toIRsvp(row));
     } catch {

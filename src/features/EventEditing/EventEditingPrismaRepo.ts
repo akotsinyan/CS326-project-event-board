@@ -17,8 +17,8 @@ function toIEvent(row: {
   category: string;
   capacity: number | null;
   status: string;
-  startDateTime: Date;
-  endDateTime: Date;
+  startDatetime: Date;
+  endDatetime: Date;
   organizerId: string;
   organizerName: string;
   createdAt: Date;
@@ -36,8 +36,8 @@ function toIEvent(row: {
     category: row.category,
     capacity: row.capacity,
     status,
-    startDatetime: row.startDateTime,
-    endDatetime: row.endDateTime,
+    startDatetime: row.startDatetime,
+    endDatetime: row.endDatetime,
     organizerId: row.organizerId,
     organizerName: row.organizerName,
     createdAt: row.createdAt,
@@ -71,7 +71,7 @@ class PrismaEventEditingRepository implements IEventEditingRepository {
     try {
       const rows = await this.prisma.event.findMany({
         where: { status: "published" },
-        orderBy: { startDateTime: "asc" },
+        orderBy: { startDatetime: "asc" },
       });
       return Ok(rows.map(toIEvent));
     } catch {
@@ -83,14 +83,15 @@ class PrismaEventEditingRepository implements IEventEditingRepository {
     try {
       const row = await this.prisma.event.create({
         data: {
+          id: crypto.randomUUID(),
           title: data.title,
           description: data.description,
           location: data.location,
           category: data.category ?? "general",
           capacity: data.capacity ?? null,
           status: data.status ?? "draft",
-          startDateTime: data.startDatetime,
-          endDateTime: data.endDatetime,
+          startDatetime: data.startDatetime,
+          endDatetime: data.endDatetime,
           organizerId: data.organizerId,
           organizerName: data.organizerName ?? "",
         },
@@ -111,8 +112,8 @@ class PrismaEventEditingRepository implements IEventEditingRepository {
           ...(data.location !== undefined && { location: data.location }),
           ...(data.category !== undefined && { category: data.category }),
           ...("capacity" in data && { capacity: data.capacity }),
-          ...(data.startDatetime !== undefined && { startDateTime: data.startDatetime }),
-          ...(data.endDatetime !== undefined && { endDateTime: data.endDatetime }),
+          ...(data.startDatetime !== undefined && { startDatetime: data.startDatetime }),
+          ...(data.endDatetime !== undefined && { endDatetime: data.endDatetime }),
         },
       });
       return Ok(toIEvent(row));

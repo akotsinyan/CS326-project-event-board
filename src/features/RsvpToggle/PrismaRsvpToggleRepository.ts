@@ -77,7 +77,7 @@ class PrismaRsvpToggleRepository implements IRsvpToggleRepository {
   async create(eventId: string, userId: string, status: RsvpStatus): Promise<Result<IRsvp, RsvpRepoError>> {
     try {
       const rsvp = await this.prisma.rsvp.create({
-        data: { eventId, userId, status },
+        data: { id: crypto.randomUUID(), eventId, userId, status },
       });
       return Ok(rsvp as IRsvp);
     } catch {
