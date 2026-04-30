@@ -1,50 +1,81 @@
 <%# src/views/events/rsvp-button.ejs %>
 <%# Expected locals: eventId, rsvpStatus (null | "going" | "waitlisted") %>
 
-<div id="rsvp-button-<%= eventId %>" class="mt-4">
+<div
+  id="rsvp-button-<%= eventId %>"
+  class="mt-4"
+  x-data="{ changed: false }"
+  x-init="$watch('changed', v => { if (v) setTimeout(() => changed = false, 400) })"
+>
+  <% const baseBtn = `
+    px-5 py-2.5 rounded-xl font-semibold text-sm
+    shadow-sm transition-all duration-300 ease-in-out
+    focus:outline-none focus:ring-2 focus:ring-offset-2
+    transform
+  `; %>
+
   <% if (rsvpStatus === "going") { %>
+
     <form method="POST" action="/events/<%= eventId %>/rsvp" class="inline"
       hx-post="/events/<%= eventId %>/rsvp"
       hx-target="#rsvp-button-<%= eventId %>"
       hx-swap="outerHTML"
+      x-on:submit="changed = true"
     >
       <button
         type="submit"
-        class="px-5 py-2.5 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 cursor-pointer"
+        x-bind:class="changed ? 'scale-105 ring-4 ring-green-200' : 'scale-100'"
+        class="<%= baseBtn %> bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
       >
-        ✓ Attending — Click to Cancel
+        ✓ Attending
       </button>
     </form>
-    <p class="text-sm text-slate-500 mt-1">You are currently attending this event.</p>
+
+    <p class="text-sm text-slate-500 mt-1">
+      You are currently attending this event.
+    </p>
 
   <% } else if (rsvpStatus === "waitlisted") { %>
+
     <form method="POST" action="/events/<%= eventId %>/rsvp" class="inline"
       hx-post="/events/<%= eventId %>/rsvp"
       hx-target="#rsvp-button-<%= eventId %>"
       hx-swap="outerHTML"
+      x-on:submit="changed = true"
     >
       <button
         type="submit"
-        class="px-5 py-2.5 rounded-lg bg-yellow-500 text-white font-semibold hover:bg-yellow-600 cursor-pointer"
+        x-bind:class="changed ? 'scale-105 ring-4 ring-yellow-200' : 'scale-100'"
+        class="<%= baseBtn %> bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-400"
       >
-        ⏳ Waitlisted — Click to Cancel
+        ⏳ Waitlisted
       </button>
     </form>
-    <p class="text-sm text-slate-500 mt-1">This event is full. You are on the waitlist.</p>
+
+    <p class="text-sm text-slate-500 mt-1">
+      Event is full. You are on the waitlist.
+    </p>
 
   <% } else { %>
+
     <form method="POST" action="/events/<%= eventId %>/rsvp" class="inline"
       hx-post="/events/<%= eventId %>/rsvp"
       hx-target="#rsvp-button-<%= eventId %>"
       hx-swap="outerHTML"
+      x-on:submit="changed = true"
     >
       <button
         type="submit"
-        class="px-5 py-2.5 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 cursor-pointer"
+        x-bind:class="changed ? 'scale-105 ring-4 ring-blue-200' : 'scale-100'"
+        class="<%= baseBtn %> bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500"
       >
-        RSVP to this Event
+        RSVP to Event
       </button>
     </form>
-    <p class="text-sm text-slate-500 mt-1">Secure your spot now.</p>
+
+    <p class="text-sm text-slate-500 mt-1">
+      Secure your spot now.
+    </p>
+
   <% } %>
 </div>
