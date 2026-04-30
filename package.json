@@ -10,6 +10,7 @@
     "test:watch": "jest --watch",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
+    "prisma:seed": "node prisma/seed.mjs",
     "clean": "rimraf dist node_modules"
   },
   "keywords": [],
