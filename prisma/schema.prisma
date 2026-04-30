@@ -39,6 +39,36 @@ enum Status {
   past
 }
 
+model Event {
+  id            String   @id @default(uuid())
+  title         String
+  description   String
+  location      String
+  category      String
+  capacity      Int?
+  status        Status   @default(draft)
+  startDateTime DateTime
+  endDateTime   DateTime
+  organizerId   String
+  organizerName String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  rsvps Rsvp[]
+}
+
+model Rsvp {
+  id        String   @id @default(uuid())
+  eventId   String
+  userId    String
+  status    String
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id])
+
+  @@unique([eventId, userId])
+}
+
 model SavedEvent {
   userId    String
   eventId   String
