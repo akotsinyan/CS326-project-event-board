@@ -22,11 +22,25 @@ model Event {
   capacity    Int?
   status      Status   @default(draft)
   startDateTime DateTime
-  endDateTime DateTime
-  organizerId String
+  endDateTime   DateTime
+  organizerId   String
   organizerName String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  rsvps Rsvp[]
+}
+
+model Rsvp {
+  id        String   @id @default(uuid())
+  eventId   String
+  userId    String
+  status    String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id])
+
+  @@unique([eventId, userId])
 }
 
 model SavedEvent {

@@ -43,6 +43,7 @@ import { CreateRsvpToggleController } from "../../src/features/RsvpToggle/RsvpTo
 
 import { CreateWaitlistPromotionRepository } from "../../src/features/WaitlistPromotion/WaitlistPromotionRepository";
 import { CreateWaitlistPromotionService } from "../../src/features/WaitlistPromotion/WaitlistPromotionService";
+import { CreateInMemorySaveForLaterRepository } from "../../src/features/SaveForLater/SaveForLaterRepo";
 
 // ── Seed credentials (InMemoryUserRepository) ─────────────────────────────────
 
@@ -74,7 +75,7 @@ function buildApp(): Express {
   const waitlistService = CreateWaitlistPromotionService(waitlistRepo);
 
   const rsvpToggleService    = CreateRsvpToggleService(rsvpRepo, eventRepo, waitlistService);
-  const rsvpToggleController = CreateRsvpToggleController(rsvpToggleService);
+  const rsvpToggleController = CreateRsvpToggleController(rsvpToggleService, eventRepo);
 
   const eventEditingService    = CreateEventEditingService(eventRepo);
   const eventEditingController = CreateEventEditingController(eventEditingService);
@@ -82,8 +83,9 @@ function buildApp(): Express {
   const eventListService    = CreateEventListService(eventRepo);
   const eventListController = CreateEventListController(eventListService);
 
-  const eventDetailService    = CreateEventDetailService(eventRepo, rsvpRepo);
-  const eventDetailController = CreateEventDetailController(eventDetailService,logger);
+  const saveForLaterRepo    = CreateInMemorySaveForLaterRepository();
+  const eventDetailService    = CreateEventDetailService(eventRepo, rsvpRepo, saveForLaterRepo);
+  const eventDetailController = CreateEventDetailController(eventDetailService, logger);
 
   const eventPublishingService    = CreateEventPublishingService(eventRepo);
   const eventPublishingController = CreateEventPublishingController(eventPublishingService);
@@ -92,9 +94,10 @@ function buildApp(): Express {
   const pastArchivingController = CreatePastEventArchivingController(pastArchivingService);
 
   // Stubs for controllers not owned by this feature.
-  const rsvpDashboardController = { showDashboard: async () => {} }          as any;
-  const createEventController   = { renderCreateEventPage: async () => {}, create: async () => {} } as any;
-  const saveForLaterController  = { toggleFromButton: async () => {}, showSavedPage: async () => {} } as any;
+  const rsvpDashboardController      = { showDashboard: async () => {} }                                          as any;
+  const createEventController        = { renderCreateEventPage: async () => {}, create: async () => {} }          as any;
+  const saveForLaterController       = { toggleFromButton: async () => {}, showSavedPage: async () => {} }        as any;
+  const waitlistPromotionController  = { getWaitlistPosition: async () => {}, promoteFromWaitlist: async () => {} } as any;
 
   return CreateApp(
     authController,
@@ -107,6 +110,7 @@ function buildApp(): Express {
     rsvpDashboardController,
     createEventController,
     saveForLaterController,
+    waitlistPromotionController,
     logger,
   ).getExpressApp();
 }
