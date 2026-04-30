@@ -4,7 +4,16 @@
 </section>
 
 <section class="mb-5 p-4 border border-slate-200 rounded-2xl bg-white shadow-sm">
-  <form method="GET" action="/events" class="flex flex-wrap items-end gap-4">
+  <form
+    method="GET"
+    action="/events"
+    class="flex flex-wrap items-end gap-4"
+    hx-get="/events"
+    hx-target="#event-list"
+    hx-swap="innerHTML"
+    hx-push-url="true"
+    hx-trigger="submit, change from:select"
+  >
     <div>
       <label for="q" class="block text-sm font-semibold text-slate-700 mb-1">Search</label>
       <input

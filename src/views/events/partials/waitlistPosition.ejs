@@ -1,0 +1,10 @@
+<%# src/views/events/partials/waitlistPosition.ejs %>
+<%# Expected locals: position (number | null) %>
+
+<div id="waitlist-position">
+  <% if (position !== null) { %>
+    <p class="text-sm text-yellow-700 mt-2">
+      You are #<%= position %> on the waitlist.
+    </p>
+  <% } %>
+</div>
