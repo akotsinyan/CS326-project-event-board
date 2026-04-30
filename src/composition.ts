@@ -1,7 +1,7 @@
 import { CreateAdminUserService } from "./auth/AdminUserService";
 import { CreateAuthController } from "./auth/AuthController";
 import { CreateAuthService } from "./auth/AuthService";
-import { CreateInMemoryUserRepository } from "./auth/InMemoryUserRepository";
+import { CreatePrismaUserRepository } from "./auth/PrismaUserRepository";
 import { CreatePasswordHasher } from "./auth/PasswordHasher";
 import { CreateApp } from "./app";
 import type { IApp } from "./contracts";
@@ -27,7 +27,6 @@ import { CreateInMemoryRsvpToggleRepository } from "./features/RsvpToggle/RsvpTo
 import { CreatePrismaRsvpToggleRepository } from "./features/RsvpToggle/PrismaRsvpToggleRepository";
 import { CreateRsvpToggleService } from "./features/RsvpToggle/RsvpToggleService";
 import { CreateRsvpToggleController } from "./features/RsvpToggle/RsvpToggleController";
-import { CreatePrismaRsvpToggleRepository } from "./features/RsvpToggle/RsvpTogglePrismaRepo";
 
 import { CreateWaitlistPromotionRepository } from "./features/WaitlistPromotion/WaitlistPromotionRepository";
 import { CreateWaitlistPromotionService } from "./features/WaitlistPromotion/WaitlistPromotionService";
@@ -56,7 +55,7 @@ export function createComposedApp(
   const resolvedLogger = logger ?? CreateLoggingService();
 
   // ── Auth ──────────────────────────────────────────────────────────────────
-  const authUsers = CreateInMemoryUserRepository();
+  const authUsers = CreatePrismaUserRepository();
   const passwordHasher = CreatePasswordHasher();
   const authService = CreateAuthService(authUsers, passwordHasher);
   const adminUserService = CreateAdminUserService(authUsers, passwordHasher);
