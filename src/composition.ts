@@ -27,7 +27,6 @@ import { CreateInMemoryRsvpToggleRepository } from "./features/RsvpToggle/RsvpTo
 import { CreatePrismaRsvpToggleRepository } from "./features/RsvpToggle/PrismaRsvpToggleRepository";
 import { CreateRsvpToggleService } from "./features/RsvpToggle/RsvpToggleService";
 import { CreateRsvpToggleController } from "./features/RsvpToggle/RsvpToggleController";
-import { CreatePrismaRsvpToggleRepository } from "./features/RsvpToggle/RsvpTogglePrismaRepo";
 
 import { CreateWaitlistPromotionRepository } from "./features/WaitlistPromotion/WaitlistPromotionRepository";
 import { CreateWaitlistPromotionService } from "./features/WaitlistPromotion/WaitlistPromotionService";
@@ -82,13 +81,7 @@ export function createComposedApp(
   // ── Shared RSVP store ─────────────────────────────────────────────────────
   const rsvpToggleRepo =
     mode === "prisma"
-      ? CreatePrismaRsvpToggleRepository(
-          new PrismaClient({
-            adapter: new PrismaBetterSqlite3({
-              url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
-            }),
-          }),
-        )
+      ? CreatePrismaRsvpToggleRepository(prisma)
       : CreateInMemoryRsvpToggleRepository();
 
   // ── Waitlist promotion (injected into RSVP toggle) ────────────────────────

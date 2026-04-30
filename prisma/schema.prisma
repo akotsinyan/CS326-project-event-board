@@ -21,8 +21,8 @@ model Event {
   category    String
   capacity    Int?
   status      Status   @default(draft)
-  startDateTime DateTime
-  endDateTime   DateTime
+  startDatetime DateTime
+  endDatetime   DateTime
   organizerId   String
   organizerName String
   createdAt     DateTime @default(now())
