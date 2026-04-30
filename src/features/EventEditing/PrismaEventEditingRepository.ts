@@ -1,116 +1,165 @@
+import { PrismaClient } from "@prisma/client";
 import { Ok, Err, type Result } from "../../lib/result";
-import { getPrismaClient } from "../../lib/prisma";
-import { toEvent } from "../CreateEvent/model/event";
-import type { IEvent, EventStatus, CreateEventData } from "../CreateEvent/model/event";
 import type {
+  IEvent,
   IEventEditingRepository,
-  EventEditingRepoError,
   UpdateEventInput,
+  EventEditingRepoError,
 } from "./EventEditingRepository";
 
-class PrismaEventEditingRepository implements IEventEditingRepository {
-  private get prisma() {
-    return getPrismaClient();
-  }
+export class PrismaEventEditingRepository implements IEventEditingRepository {
+  constructor(private readonly prisma: PrismaClient) {}
 
   async findById(eventId: string): Promise<Result<IEvent, EventEditingRepoError>> {
     try {
-      const event = await this.prisma.event.findUnique({ where: { id: eventId } });
-      if (!event) return Err({ type: "EventNotFound" as const });
-      return Ok(toEvent(event));
+      const event = await this.prisma.event.findUnique({
+        where: { id: eventId },
+      });
+
+      if (!event) {
+        return Err({ type: "EventNotFound" } as const);
+      }
+
+      return Ok(event as IEvent);
     } catch {
-      return Err({ type: "UnexpectedError" as const, message: "Failed to find event." });
+      return Err({
+        type: "UnexpectedError",
+        message: "Failed to find event.",
+      } as const);
     }
   }
 
   async findAll(): Promise<Result<IEvent[], EventEditingRepoError>> {
     try {
-      const events = await this.prisma.event.findMany();
-      return Ok(events.map(toEvent));
+      const events = await this.prisma.event.findMany({
+        orderBy: { startDatetime: "asc" },
+      });
+
+      return Ok(events as IEvent[]);
     } catch {
-      return Err({ type: "UnexpectedError" as const, message: "Failed to fetch events." });
+      return Err({
+        type: "UnexpectedError",
+        message: "Failed to list events.",
+      } as const);
     }
   }
 
   async findPublished(): Promise<Result<IEvent[], EventEditingRepoError>> {
     try {
-      const events = await this.prisma.event.findMany({ where: { status: "published" } });
-      return Ok(events.map(toEvent));
+      const events = await this.prisma.event.findMany({
+        where: { status: "published" },
+        orderBy: { startDatetime: "asc" },
+      });
+
+      return Ok(events as IEvent[]);
     } catch {
-      return Err({ type: "UnexpectedError" as const, message: "Failed to fetch published events." });
+      return Err({
+        type: "UnexpectedError",
+        message: "Failed to list published events.",
+      } as const);
     }
   }
 
-  async add(data: CreateEventData): Promise<Result<IEvent, EventEditingRepoError>> {
+  async add(data: IEvent): Promise<Result<IEvent, EventEditingRepoError>> {
     try {
-      const id = `evt-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       const event = await this.prisma.event.create({
         data: {
-          id,
+          id: data.id,
           title: data.title,
           description: data.description,
           location: data.location,
-          category: data.category ?? "general",
-          capacity: data.capacity ?? null,
-          status: data.status ?? "draft",
+          category: data.category,
+          status: data.status,
+          capacity: data.capacity,
           startDatetime: data.startDatetime,
           endDatetime: data.endDatetime,
           organizerId: data.organizerId,
-          organizerName: data.organizerName ?? "",
-          createdAt: data.createdAt ?? new Date(),
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
         },
       });
-      return Ok(toEvent(event));
+
+      return Ok(event as IEvent);
     } catch {
-      return Err({ type: "UnexpectedError" as const, message: "Failed to create event." });
+      return Err({
+        type: "UnexpectedError",
+        message: "Failed to create event.",
+      } as const);
     }
   }
 
-  async update(eventId: string, data: UpdateEventInput): Promise<Result<IEvent, EventEditingRepoError>> {
+  async update(
+    eventId: string,
+    data: UpdateEventInput
+  ): Promise<Result<IEvent, EventEditingRepoError>> {
     try {
       const event = await this.prisma.event.update({
         where: { id: eventId },
-        data,
+        data: {
+          title: data.title,
+          description: data.description,
+          location: data.location,
+          category: data.category,
+          capacity: data.capacity,
+          startDatetime: data.startDatetime,
+          endDatetime: data.endDatetime,
+        },
       });
-      return Ok(toEvent(event));
+
+      return Ok(event as IEvent);
     } catch {
-      return Err({ type: "EventNotFound" as const });
+      return Err({
+        type: "UnexpectedError",
+        message: "Failed to update event.",
+      } as const);
     }
   }
 
-  async updateStatus(eventId: string, status: EventStatus): Promise<Result<IEvent, EventEditingRepoError>> {
+  async updateStatus(
+    eventId: string,
+    status: IEvent["status"]
+  ): Promise<Result<IEvent, EventEditingRepoError>> {
     try {
       const event = await this.prisma.event.update({
         where: { id: eventId },
         data: { status },
       });
-      return Ok(toEvent(event));
+
+      return Ok(event as IEvent);
     } catch {
-      return Err({ type: "EventNotFound" as const });
+      return Err({
+        type: "UnexpectedError",
+        message: "Failed to update event status.",
+      } as const);
     }
   }
 
   async search(query: string): Promise<Result<IEvent[], EventEditingRepoError>> {
     try {
-      const all = await this.prisma.event.findMany();
-      if (!query.trim()) return Ok(all.map(toEvent));
-      const q = query.toLowerCase();
-      return Ok(
-        all
-          .filter(
-            (e) =>
-              e.title.toLowerCase().includes(q) ||
-              e.description.toLowerCase().includes(q) ||
-              e.location.toLowerCase().includes(q),
-          )
-          .map(toEvent),
-      );
+      const events = await this.prisma.event.findMany({
+        where: {
+          OR: [
+            { title: { contains: query } },
+            { description: { contains: query } },
+            { location: { contains: query } },
+            { category: { contains: query } },
+          ],
+        },
+        orderBy: { startDatetime: "asc" },
+      });
+
+      return Ok(events as IEvent[]);
     } catch {
-      return Err({ type: "UnexpectedError" as const, message: "Failed to search events." });
+      return Err({
+        type: "UnexpectedError",
+        message: "Failed to search events.",
+      } as const);
     }
   }
 }
 
-export function CreatePrismaEventEditingRepository(): IEventEditingRepository {
-  return new PrismaEventEditingRepository();
+export function CreatePrismaEventEditingRepository(
+  prisma: PrismaClient
+): IEventEditingRepository {
+  return new PrismaEventEditingRepository(prisma);
 }
