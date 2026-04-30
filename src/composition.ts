@@ -8,7 +8,6 @@ import type { IApp } from "./contracts";
 import { CreateLoggingService } from "./service/LoggingService";
 import type { ILoggingService } from "./service/LoggingService";
 
-import { CreateInMemoryEventEditingRepository } from "./features/EventEditing/EventEditingRepository";
 import { CreateEventEditingService } from "./features/EventEditing/EventEditingService";
 import { CreateEventEditingController } from "./features/EventEditing/EventEditingController";
 
@@ -25,6 +24,7 @@ import { CreatePastEventArchivingService } from "./features/PastEventArchiving/P
 import { CreatePastEventArchivingController } from "./features/PastEventArchiving/PastEventArchivingController";
 
 import { CreateInMemoryRsvpToggleRepository } from "./features/RsvpToggle/RsvpToggleRepository";
+import { CreatePrismaRsvpToggleRepository } from "./features/RsvpToggle/PrismaRsvpToggleRepository";
 import { CreateRsvpToggleService } from "./features/RsvpToggle/RsvpToggleService";
 import { CreateRsvpToggleController } from "./features/RsvpToggle/RsvpToggleController";
 import { CreatePrismaRsvpToggleRepository } from "./features/RsvpToggle/RsvpTogglePrismaRepo";
@@ -42,9 +42,11 @@ import { createEventController } from "./features/CreateEvent/controller/EventCo
 import { CreateInMemorySaveForLaterRepository } from "./features/SaveForLater/SaveForLaterRepo";
 import { CreateSaveForLaterService } from "./features/SaveForLater/SaveForLaterService";
 import { CreateSaveForLaterController } from "./features/SaveForLater/SaveForLaterController";
-import { CreatePrismaSaveForLaterRepository } from "./features/SaveForLater/SaveForLaterPrismaRepo";
-import { CreatePrismaEventEditingRepository } from "./features/EventEditing/EventEditingPrismaRepo";
+
 import { PrismaClient } from "@prisma/client";
+import { CreatePrismaEventEditingRepository } from "./features/EventEditing/PrismaEventEditingRepository";
+import { CreateInMemoryEventEditingRepository } from "./features/EventEditing/EventEditingRepository";
+import { CreatePrismaSaveForLaterRepository } from "./features/SaveForLater/SaveForLaterPrismaRepo";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 
 export function createComposedApp(
@@ -64,16 +66,17 @@ export function createComposedApp(
     resolvedLogger,
   );
 
+  // ── Shared Prisma client ──────────────────────────────────────────────────
+  const prisma = new PrismaClient({
+    adapter: new PrismaBetterSqlite3({
+      url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
+    }),
+  });
+
   // ── Shared event store (single source of truth for all event features) ────
   const sharedEventRepo =
     mode === "prisma"
-      ? CreatePrismaEventEditingRepository(
-          new PrismaClient({
-            adapter: new PrismaBetterSqlite3({
-              url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
-            }),
-          }),
-        )
+      ? CreatePrismaEventEditingRepository(prisma)
       : CreateInMemoryEventEditingRepository();
 
   // ── Shared RSVP store ─────────────────────────────────────────────────────
@@ -116,13 +119,7 @@ export function createComposedApp(
   // ── Save for later ────────────────────────────────────────────────────────
   const saveForLaterRepo =
     mode === "prisma"
-      ? CreatePrismaSaveForLaterRepository(
-          new PrismaClient({
-            adapter: new PrismaBetterSqlite3({
-              url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
-            }),
-          }),
-        )
+      ? CreatePrismaSaveForLaterRepository(prisma)
       : CreateInMemorySaveForLaterRepository();
   const saveForLaterService = CreateSaveForLaterService(
     saveForLaterRepo,

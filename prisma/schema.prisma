@@ -6,6 +6,32 @@ datasource db {
   provider = "sqlite"
 }
 
+model Event {
+  id            String   @id @default(cuid())
+  title         String
+  description   String
+  location      String
+  category      String
+  status        String   @default("draft")
+  capacity      Int?
+  startDatetime DateTime
+  endDatetime   DateTime
+  organizerId   String
+  organizerName String   @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  rsvps         Rsvp[]
+}
+
+model Rsvp {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String
+  status    String   @default("going")
+  createdAt DateTime @default(now())
+  event     Event    @relation(fields: [eventId], references: [id])
+}
+
 enum Status {
   draft
   published
