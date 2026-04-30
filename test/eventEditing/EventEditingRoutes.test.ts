@@ -2,7 +2,7 @@ import request from "supertest";
 import { createComposedApp } from "../../src/composition";
 
 // Boot the app once for all tests
-const app = createComposedApp().getExpressApp();
+const app = createComposedApp("memory").getExpressApp();
 
 // Helper: log in and return the session cookie
 async function loginAs(email: string, password: string): Promise<string> {
