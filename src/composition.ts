@@ -43,7 +43,7 @@ import { CreateSaveForLaterService } from "./features/SaveForLater/SaveForLaterS
 import { CreateSaveForLaterController } from "./features/SaveForLater/SaveForLaterController";
 
 import { PrismaClient } from "@prisma/client";
-import { CreatePrismaEventEditingRepository } from "./features/EventEditing/PrismaEventEditingRepository";
+import { CreatePrismaEventEditingRepository } from "./features/EventEditing/EventEditingPrismaRepo";
 import { CreateInMemoryEventEditingRepository } from "./features/EventEditing/EventEditingRepository";
 import { CreatePrismaSaveForLaterRepository } from "./features/SaveForLater/SaveForLaterPrismaRepo";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
@@ -81,13 +81,7 @@ export function createComposedApp(
   // ── Shared RSVP store ─────────────────────────────────────────────────────
   const rsvpToggleRepo =
     mode === "prisma"
-      ? CreatePrismaRsvpToggleRepository(
-          new PrismaClient({
-            adapter: new PrismaBetterSqlite3({
-              url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
-            }),
-          }),
-        )
+      ? CreatePrismaRsvpToggleRepository(prisma)
       : CreateInMemoryRsvpToggleRepository();
 
   // ── Waitlist promotion (injected into RSVP toggle) ────────────────────────

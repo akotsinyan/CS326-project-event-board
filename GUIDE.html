@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Event Board — Run &amp; Verification Guide</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 12pt; line-height: 1.6; margin: 2cm; color: #1a1a1a; }
+  h1 { font-size: 22pt; border-bottom: 2px solid #2563eb; padding-bottom: 6px; color: #1e3a8a; }
+  h2 { font-size: 15pt; color: #1e40af; margin-top: 24px; border-bottom: 1px solid #bfdbfe; padding-bottom: 4px; }
+  h3 { font-size: 12pt; color: #1d4ed8; margin-top: 16px; }
+  code, pre { font-family: "Courier New", monospace; background: #f1f5f9; border-radius: 4px; }
+  code { padding: 1px 4px; font-size: 10.5pt; }
+  pre { padding: 10px 14px; font-size: 10pt; border-left: 3px solid #2563eb; overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+  th { background: #1e40af; color: white; padding: 7px 10px; text-align: left; }
+  td { padding: 6px 10px; border-bottom: 1px solid #e2e8f0; }
+  tr:nth-child(even) { background: #f8fafc; }
+  .note { background: #eff6ff; border-left: 4px solid #2563eb; padding: 8px 12px; margin: 10px 0; }
+  .warn { background: #fff7ed; border-left: 4px solid #f97316; padding: 8px 12px; margin: 10px 0; }
+  ul, ol { margin: 6px 0; padding-left: 22px; }
+  li { margin: 3px 0; }
+</style>
+</head>
+<body>
+
+<h1>Event Board — Run &amp; Verification Guide</h1>
+<p><em>Sprint 3 Refactoring · CS326 Team Project</em></p>
+
+<h2>1. Prerequisites</h2>
+<ul>
+  <li>Node.js ≥ 18 and npm</li>
+  <li>A terminal in the project root (<code>CS326-project-event-board/</code>)</li>
+</ul>
+
+<h2>2. First-Time Setup</h2>
+<pre>npm install
+npx prisma generate
+npx prisma migrate deploy</pre>
+<div class="note">
+  <code>migrate deploy</code> applies the three existing migrations and creates <code>prisma/dev.db</code>.
+  If the DB already exists and has all tables, you can skip this step.
+</div>
+
+<h2>3. Running the App</h2>
+<h3>In-memory mode (default — data resets on restart)</h3>
+<pre>npm run dev</pre>
+
+<h3>Prisma mode (persistent SQLite)</h3>
+<pre>MODE=prisma npm run dev</pre>
+
+<p>The app starts at <strong>https://localhost:3443</strong> (HTTP on 3000 redirects to HTTPS).
+A self-signed certificate warning will appear in the browser — accept it to proceed.</p>
+
+<div class="warn">
+  <strong>Note:</strong> In Prisma mode the database starts empty — there are no seed events.
+  You will need to create and publish at least one event to test most features.
+</div>
+
+<h2>4. Demo Users</h2>
+<p>These users are seeded in-memory on startup (both modes). Password for all accounts: <code>password123</code></p>
+<table>
+  <tr><th>Email</th><th>Role</th><th>Capabilities</th></tr>
+  <tr><td>admin@app.test</td><td>admin</td><td>Full access — manage users, create/edit/publish/cancel any event</td></tr>
+  <tr><td>staff@app.test</td><td>staff</td><td>Create, edit, publish, and cancel events they own</td></tr>
+  <tr><td>user@app.test</td><td>user</td><td>Browse events, RSVP, save for later, view dashboard</td></tr>
+</table>
+
+<h2>5. Feature Verification Checklist</h2>
+
+<h3>Feature 1 — Create Event</h3>
+<ol>
+  <li>Log in as <strong>staff@app.test</strong>.</li>
+  <li>Navigate to <a href="https://localhost:3443/events/new">/events/new</a>.</li>
+  <li>Fill in all required fields (Title, Description, Location, Start/End datetime). Submit.</li>
+  <li><strong>Expected:</strong> Redirected to the new event's detail page. Status badge shows <em>draft</em>.</li>
+  <li>Try submitting with an empty title — <strong>Expected:</strong> validation error shown inline.</li>
+</ol>
+
+<h3>Feature 2 — Event Detail Page</h3>
+<ol>
+  <li>From the event list (<a href="https://localhost:3443/events">/events</a>) or directly via URL, open any event.</li>
+  <li><strong>Expected:</strong> Title, description, location, category, start/end times, organizer, and attendee count are all displayed.</li>
+  <li>As <strong>admin</strong> viewing a draft event: Edit, Publish, and Cancel controls appear in the sidebar.</li>
+  <li>As <strong>user@app.test</strong> viewing a published event: RSVP button and Save button appear.</li>
+</ol>
+
+<h3>Feature 3 — Event Editing</h3>
+<ol>
+  <li>Log in as <strong>staff@app.test</strong> (or admin). Open a draft or published event you own.</li>
+  <li>Click <em>Edit</em>. The edit form pre-fills with current values.</li>
+  <li>Change the title and click <em>Save Changes</em>.</li>
+  <li><strong>Expected:</strong> Redirected to the updated event detail page with the new title.</li>
+  <li>Try submitting with an empty location — <strong>Expected:</strong> error shown, form retains other values (HTMX inline update).</li>
+</ol>
+
+<h3>Feature 4 — RSVP Toggle</h3>
+<ol>
+  <li>Log in as <strong>user@app.test</strong>. Open a <em>published</em> event.</li>
+  <li>Click <em>RSVP</em> — <strong>Expected:</strong> button changes to <em>Cancel RSVP</em>.</li>
+  <li>Click <em>Cancel RSVP</em> — <strong>Expected:</strong> button reverts to <em>RSVP</em>.</li>
+  <li>As <strong>admin</strong> or <strong>staff</strong>: RSVP button should not appear (roles cannot RSVP).</li>
+</ol>
+
+<h3>Feature 5 — Event Publishing</h3>
+<ol>
+  <li>Log in as <strong>staff@app.test</strong>. Open a draft event you created.</li>
+  <li>Click <em>Publish</em> — <strong>Expected:</strong> status badge changes to <em>published</em>; Publish button disappears, Cancel button appears.</li>
+  <li>Click <em>Cancel Event</em> — <strong>Expected:</strong> status changes to <em>cancelled</em>. A cancellation notice is shown.</li>
+</ol>
+
+<h3>Feature 6 — Category / Date Filter (Event List)</h3>
+<ol>
+  <li>Navigate to <a href="https://localhost:3443/events">/events</a>.</li>
+  <li>Select a category from the dropdown (e.g., <em>Tech</em>) and click <em>Filter</em>.</li>
+  <li><strong>Expected:</strong> Only events in that category are shown (HTMX partial update, URL updates).</li>
+  <li>Select a Timeframe (e.g., <em>This week</em>) — <strong>Expected:</strong> events filtered to the current week.</li>
+  <li>Type a search term in the Search field — <strong>Expected:</strong> matching events shown by title/description/location.</li>
+  <li>Click <em>Clear</em> to reset — <strong>Expected:</strong> all upcoming published events shown.</li>
+</ol>
+
+<h3>Feature 7 — RSVP Dashboard</h3>
+<ol>
+  <li>Log in as <strong>user@app.test</strong>. RSVP to at least one published event.</li>
+  <li>Navigate to <a href="https://localhost:3443/rsvps/dashboard">/rsvps/dashboard</a>.</li>
+  <li><strong>Expected:</strong> <em>Upcoming</em> section shows events with "Going" or "Waitlisted" status. <em>Past &amp; Cancelled</em> section shows older RSVPs.</li>
+  <li>Click <em>Cancel RSVP</em> on an upcoming entry — <strong>Expected:</strong> row updates in place (HTMX) to show Cancelled status.</li>
+  <li>Log in as <strong>admin</strong> and try to access the dashboard — <strong>Expected:</strong> 403 Forbidden.</li>
+</ol>
+
+<h3>Feature 9 — Waitlist Promotion</h3>
+<ol>
+  <li>Create a published event with <em>Capacity = 1</em> as staff.</li>
+  <li>Log in as <strong>user@app.test</strong> and RSVP — <strong>Expected:</strong> status is <em>Going</em>.</li>
+  <li>Create a second user account via <a href="https://localhost:3443/admin/users">/admin/users</a> (role: user).</li>
+  <li>Log in as the second user and RSVP to the same event — <strong>Expected:</strong> status is <em>Waitlisted</em>. Waitlist position (#1) appears on the detail page.</li>
+  <li>Cancel the first user's RSVP — <strong>Expected:</strong> second user is automatically promoted to <em>Going</em>.</li>
+</ol>
+
+<h3>Feature 10 — Event Search</h3>
+<ol>
+  <li>Navigate to <a href="https://localhost:3443/events">/events</a>.</li>
+  <li>Type a keyword in the Search box (e.g., part of an event title). Press Enter or click <em>Filter</em>.</li>
+  <li><strong>Expected:</strong> Matching events appear. URL updates to <code>/events?q=keyword</code>.</li>
+  <li>Clear the search — <strong>Expected:</strong> full list restored.</li>
+</ol>
+
+<h3>Feature 11 — Past Event Archiving</h3>
+<ol>
+  <li>Navigate to <a href="https://localhost:3443/events/archive">/events/archive</a>.</li>
+  <li><strong>Expected:</strong> Events with status <em>past</em> or a past end datetime are listed. In memory mode, two seed events appear here.</li>
+  <li>In Prisma mode: manually set an event's end datetime to the past via the edit form, or use the PastEventArchiving service to trigger archiving.</li>
+</ol>
+
+<h3>Feature 14 — Save for Later</h3>
+<ol>
+  <li>Log in as <strong>user@app.test</strong>. Open any published event.</li>
+  <li>Click <em>Save</em> in the sidebar — <strong>Expected:</strong> button changes to <em>Saved ✓</em> (HTMX partial update).</li>
+  <li>Navigate to <a href="https://localhost:3443/saved">/saved</a> — <strong>Expected:</strong> saved event appears in the list.</li>
+  <li>Click <em>Remove</em> on the saved event — <strong>Expected:</strong> event disappears from the saved list.</li>
+  <li>Confirm toggling save from the event detail page also works.</li>
+</ol>
+
+<h2>6. Key URLs at a Glance</h2>
+<table>
+  <tr><th>URL</th><th>Who can access</th><th>Feature</th></tr>
+  <tr><td>/events</td><td>All authenticated</td><td>Event list, search, filter</td></tr>
+  <tr><td>/events/new</td><td>admin, staff</td><td>Create event</td></tr>
+  <tr><td>/events/archive</td><td>All authenticated</td><td>Past events</td></tr>
+  <tr><td>/events/:id</td><td>All authenticated</td><td>Event detail</td></tr>
+  <tr><td>/events/:id/edit</td><td>admin, staff (owner)</td><td>Edit event</td></tr>
+  <tr><td>/rsvps/dashboard</td><td>user only</td><td>RSVP dashboard</td></tr>
+  <tr><td>/saved</td><td>user only</td><td>Saved events</td></tr>
+  <tr><td>/admin/users</td><td>admin only</td><td>User management</td></tr>
+</table>
+
+<h2>7. Running Tests</h2>
+<pre>npm test               # all 186 tests across 21 suites
+npx jest path/to/file  # single test file</pre>
+<p>Tests always run in <strong>memory</strong> mode (no DB required).</p>
+
+<h2>8. Resetting the Database</h2>
+<p>To wipe all data and start fresh in Prisma mode:</p>
+<pre>rm prisma/dev.db
+npx prisma migrate deploy</pre>
+
+</body>
+</html>
