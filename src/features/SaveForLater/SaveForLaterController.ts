@@ -61,7 +61,13 @@ class SaveForLaterController implements ISaveForLaterController {
       return;
     }
 
-    // HTMX-friendly partial update
+    // When called from /saved, removing should delete the row entirely
+    const currentUrl = req.get("HX-Current-URL") ?? "";
+    if (result.value === "unsaved" && currentUrl.includes("/saved")) {
+      res.status(200).send("");
+      return;
+    }
+
     res.render("events/partials/saveButton", {
       state: result.value,
       eventId,
