@@ -10,4 +10,6 @@ module.exports = {
   },
   clearMocks: true,
   collectCoverageFrom: ['src/**/*.ts'],
+  globalSetup: '<rootDir>/test/globalSetup.cjs',
+  setupFilesAfterEnv: ['<rootDir>/test/setupTests.cjs'],
 }

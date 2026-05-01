@@ -6,41 +6,38 @@ datasource db {
   provider = "sqlite"
 }
 
-enum Status {
-  draft
-  published
-  cancelled
-  past
+model User {
+  id           String @id
+  email        String @unique
+  displayName  String
+  role         String @default("user")
+  passwordHash String
 }
 
 model Event {
-  id          String   @id @default(uuid())
-  title       String
-  description String
-  location    String
-  category    String
-  capacity    Int?
-  status      Status   @default(draft)
+  id            String   @id
+  title         String
+  description   String
+  location      String
+  category      String   @default("general")
+  capacity      Int?
+  status        String   @default("draft")
   startDatetime DateTime
   endDatetime   DateTime
   organizerId   String
-  organizerName String
+  organizerName String   @default("")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-
-  rsvps Rsvp[]
+  rsvps         Rsvp[]
 }
 
 model Rsvp {
-  id        String   @id @default(uuid())
+  id        String   @id
   eventId   String
   userId    String
   status    String
   createdAt DateTime @default(now())
-
-  event Event @relation(fields: [eventId], references: [id])
-
-  @@unique([eventId, userId])
+  event     Event    @relation(fields: [eventId], references: [id])
 }
 
 model SavedEvent {

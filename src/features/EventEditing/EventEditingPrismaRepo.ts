@@ -60,7 +60,7 @@ class PrismaEventEditingRepository implements IEventEditingRepository {
 
   async findAll(): Promise<Result<IEvent[], EventEditingRepoError>> {
     try {
-      const rows = await this.prisma.event.findMany({ orderBy: { startDatetime: "asc" } });
+      const rows = await this.prisma.event.findMany();
       return Ok(rows.map(toIEvent));
     } catch {
       return Err({ type: "UnexpectedError" as const, message: "Failed to fetch events." });
@@ -75,7 +75,7 @@ class PrismaEventEditingRepository implements IEventEditingRepository {
       });
       return Ok(rows.map(toIEvent));
     } catch {
-      return Err({ type: "UnexpectedError" as const, message: "Failed to fetch published events." });
+      return Err({ type: "UnexpectedError" as const, message: "Failed to fetch events." });
     }
   }
 
@@ -83,6 +83,7 @@ class PrismaEventEditingRepository implements IEventEditingRepository {
     try {
       const row = await this.prisma.event.create({
         data: {
+          id: crypto.randomUUID(),
           title: data.title,
           description: data.description,
           location: data.location,
@@ -111,8 +112,8 @@ class PrismaEventEditingRepository implements IEventEditingRepository {
           ...(data.location !== undefined && { location: data.location }),
           ...(data.category !== undefined && { category: data.category }),
           ...("capacity" in data && { capacity: data.capacity }),
-          ...(data.startDatetime !== undefined && { startDateTime: data.startDatetime }),
-          ...(data.endDatetime !== undefined && { endDateTime: data.endDatetime }),
+          ...(data.startDatetime !== undefined && { startDatetime: data.startDatetime }),
+          ...(data.endDatetime !== undefined && { endDatetime: data.endDatetime }),
         },
       });
       return Ok(toIEvent(row));
@@ -138,7 +139,7 @@ class PrismaEventEditingRepository implements IEventEditingRepository {
   async search(query: string): Promise<Result<IEvent[], EventEditingRepoError>> {
     try {
       if (!query.trim()) {
-        const rows = await this.prisma.event.findMany({ orderBy: { startDatetime: "asc" } });
+        const rows = await this.prisma.event.findMany();
         return Ok(rows.map(toIEvent));
       }
       const rows = await this.prisma.event.findMany({
@@ -149,7 +150,6 @@ class PrismaEventEditingRepository implements IEventEditingRepository {
             { location: { contains: query } },
           ],
         },
-        orderBy: { startDatetime: "asc" },
       });
       return Ok(rows.map(toIEvent));
     } catch {

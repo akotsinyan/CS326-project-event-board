@@ -1,7 +1,7 @@
 import { CreateAdminUserService } from "./auth/AdminUserService";
 import { CreateAuthController } from "./auth/AuthController";
 import { CreateAuthService } from "./auth/AuthService";
-import { CreateInMemoryUserRepository } from "./auth/InMemoryUserRepository";
+import { CreatePrismaUserRepository } from "./auth/PrismaUserRepository";
 import { CreatePasswordHasher } from "./auth/PasswordHasher";
 import { CreateApp } from "./app";
 import type { IApp } from "./contracts";
@@ -43,7 +43,7 @@ import { CreateSaveForLaterService } from "./features/SaveForLater/SaveForLaterS
 import { CreateSaveForLaterController } from "./features/SaveForLater/SaveForLaterController";
 
 import { PrismaClient } from "@prisma/client";
-import { CreatePrismaEventEditingRepository } from "./features/EventEditing/PrismaEventEditingRepository";
+import { CreatePrismaEventEditingRepository } from "./features/EventEditing/EventEditingPrismaRepo";
 import { CreateInMemoryEventEditingRepository } from "./features/EventEditing/EventEditingRepository";
 import { CreatePrismaSaveForLaterRepository } from "./features/SaveForLater/SaveForLaterPrismaRepo";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
@@ -55,7 +55,7 @@ export function createComposedApp(
   const resolvedLogger = logger ?? CreateLoggingService();
 
   // ── Auth ──────────────────────────────────────────────────────────────────
-  const authUsers = CreateInMemoryUserRepository();
+  const authUsers = CreatePrismaUserRepository();
   const passwordHasher = CreatePasswordHasher();
   const authService = CreateAuthService(authUsers, passwordHasher);
   const adminUserService = CreateAdminUserService(authUsers, passwordHasher);

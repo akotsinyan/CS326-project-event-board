@@ -1,19 +1,33 @@
-// src/features/RsvpToggle/PrismaRsvpToggleRepository.ts
-
 import { PrismaClient } from "@prisma/client";
 import { Ok, Err, type Result } from "../../lib/result";
-import type { IRsvpToggleRepository, IRsvp, RsvpStatus, RsvpRepoError } from "./RsvpToggleRepository";
+import type { IRsvpToggleRepository, IRsvp, RsvpRepoError, RsvpStatus } from "./RsvpToggleRepository";
+
+function toIRsvp(row: {
+  id: string;
+  eventId: string;
+  userId: string;
+  status: string;
+  createdAt: Date;
+}): IRsvp {
+  return {
+    id: row.id,
+    eventId: row.eventId,
+    userId: row.userId,
+    status: row.status as RsvpStatus,
+    createdAt: row.createdAt,
+  };
+}
 
 class PrismaRsvpToggleRepository implements IRsvpToggleRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   async findByUserId(userId: string): Promise<Result<IRsvp[], RsvpRepoError>> {
     try {
-      const rsvps = await this.prisma.rsvp.findMany({
+      const rows = await this.prisma.rsvp.findMany({
         where: { userId },
         orderBy: { createdAt: "asc" },
       });
-      return Ok(rsvps as IRsvp[]);
+      return Ok(rows.map(toIRsvp));
     } catch {
       return Err({ type: "UnexpectedError" as const, message: "Failed to fetch RSVPs." });
     }
@@ -21,10 +35,10 @@ class PrismaRsvpToggleRepository implements IRsvpToggleRepository {
 
   async findByEventAndUser(eventId: string, userId: string): Promise<Result<IRsvp | null, RsvpRepoError>> {
     try {
-      const rsvp = await this.prisma.rsvp.findFirst({
+      const row = await this.prisma.rsvp.findFirst({
         where: { eventId, userId },
       });
-      return Ok(rsvp as IRsvp | null);
+      return Ok(row ? toIRsvp(row) : null);
     } catch {
       return Err({ type: "UnexpectedError" as const, message: "Failed to find RSVP." });
     }
@@ -32,22 +46,22 @@ class PrismaRsvpToggleRepository implements IRsvpToggleRepository {
 
   async findActiveByEvent(eventId: string): Promise<Result<IRsvp[], RsvpRepoError>> {
     try {
-      const rsvps = await this.prisma.rsvp.findMany({
+      const rows = await this.prisma.rsvp.findMany({
         where: { eventId, status: "going" },
       });
-      return Ok(rsvps as IRsvp[]);
+      return Ok(rows.map(toIRsvp));
     } catch {
-      return Err({ type: "UnexpectedError" as const, message: "Failed to find active RSVPs." });
+      return Err({ type: "UnexpectedError" as const, message: "Failed to find RSVPs." });
     }
   }
 
   async findWaitlistedByEvent(eventId: string): Promise<Result<IRsvp[], RsvpRepoError>> {
     try {
-      const rsvps = await this.prisma.rsvp.findMany({
+      const rows = await this.prisma.rsvp.findMany({
         where: { eventId, status: "waitlisted" },
         orderBy: { createdAt: "asc" },
       });
-      return Ok(rsvps as IRsvp[]);
+      return Ok(rows.map(toIRsvp));
     } catch {
       return Err({ type: "UnexpectedError" as const, message: "Failed to find waitlisted RSVPs." });
     }
@@ -58,9 +72,7 @@ class PrismaRsvpToggleRepository implements IRsvpToggleRepository {
       const current = await this.prisma.rsvp.findFirst({
         where: { eventId, userId },
       });
-
       if (!current || current.status !== "waitlisted") return Ok(0);
-
       const count = await this.prisma.rsvp.count({
         where: {
           eventId,
@@ -70,16 +82,16 @@ class PrismaRsvpToggleRepository implements IRsvpToggleRepository {
       });
       return Ok(count);
     } catch {
-      return Err({ type: "UnexpectedError" as const, message: "Failed to count waitlist position." });
+      return Err({ type: "UnexpectedError" as const, message: "Failed to calculate waitlist position." });
     }
   }
 
   async create(eventId: string, userId: string, status: RsvpStatus): Promise<Result<IRsvp, RsvpRepoError>> {
     try {
-      const rsvp = await this.prisma.rsvp.create({
+      const row = await this.prisma.rsvp.create({
         data: { id: crypto.randomUUID(), eventId, userId, status },
       });
-      return Ok(rsvp as IRsvp);
+      return Ok(toIRsvp(row));
     } catch {
       return Err({ type: "UnexpectedError" as const, message: "Failed to create RSVP." });
     }
@@ -87,15 +99,25 @@ class PrismaRsvpToggleRepository implements IRsvpToggleRepository {
 
   async updateStatus(rsvpId: string, status: RsvpStatus): Promise<Result<IRsvp, RsvpRepoError>> {
     try {
-      const rsvp = await this.prisma.rsvp.update({
+      const row = await this.prisma.rsvp.update({
         where: { id: rsvpId },
         data: { status },
       });
-      return Ok(rsvp as IRsvp);
-    } catch {
-      return Err({ type: "NotFound" as const });
+      return Ok(toIRsvp(row));
+    } catch (err: unknown) {
+      if (isPrismaNotFound(err)) return Err({ type: "NotFound" as const });
+      return Err({ type: "UnexpectedError" as const, message: "Failed to update RSVP." });
     }
   }
+}
+
+function isPrismaNotFound(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "code" in err &&
+    (err as { code: string }).code === "P2025"
+  );
 }
 
 export function CreatePrismaRsvpToggleRepository(prisma: PrismaClient): IRsvpToggleRepository {
