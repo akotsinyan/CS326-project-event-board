@@ -30,6 +30,12 @@ function validateInput(data: UpdateEventInput): { type: "InvalidInput"; message:
   if (data.title !== undefined && data.title.trim().length === 0) {
     return { type: "InvalidInput" as const, message: "Title cannot be empty." };
   }
+  if (data.description !== undefined && data.description.trim().length === 0) {
+    return { type: "InvalidInput" as const, message: "Description cannot be empty." };
+  }
+  if (data.location !== undefined && data.location.trim().length === 0) {
+    return { type: "InvalidInput" as const, message: "Location cannot be empty." };
+  }
   if (data.startDatetime !== undefined && data.endDatetime !== undefined) {
     if (data.endDatetime <= data.startDatetime) {
       return { type: "InvalidInput" as const, message: "End time must be after start time." };
