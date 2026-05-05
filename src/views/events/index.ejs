@@ -5,6 +5,7 @@
 
 <section class="mb-5 p-4 border border-slate-200 rounded-2xl bg-white shadow-sm">
   <form
+    x-data="{ q: '<%= filter.query %>', category: '<%= filter.category %>', timeframe: '<%= filter.timeframe %>' }"
     method="GET"
     action="/events"
     class="flex flex-wrap items-end gap-4"
@@ -17,6 +18,7 @@
     <div>
       <label for="q" class="block text-sm font-semibold text-slate-700 mb-1">Search</label>
       <input
+        x-model="q"
         type="text"
         id="q"
         name="q"
@@ -29,9 +31,11 @@
     <div>
       <label for="category" class="block text-sm font-semibold text-slate-700 mb-1">Category</label>
       <select
+        x-model="category"
         id="category"
         name="category"
-        class="px-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        :class="category ? 'border-blue-500 ring-2 ring-blue-200' : 'border-slate-300'"
+        class="px-3 py-2 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 border"
       >
         <option value="" <%= filter.category === "" ? "selected" : "" %>>All categories</option>
         <option value="tech" <%= filter.category === "tech" ? "selected" : "" %>>Tech</option>
@@ -44,9 +48,11 @@
     <div>
       <label for="timeframe" class="block text-sm font-semibold text-slate-700 mb-1">Timeframe</label>
       <select
+        x-model="timeframe"
         id="timeframe"
         name="timeframe"
-        class="px-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        :class="timeframe !== 'all' ? 'border-blue-500 ring-2 ring-blue-200' : 'border-slate-300'"
+        class="px-3 py-2 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 border"
       >
         <option value="all" <%= filter.timeframe === "all" ? "selected" : "" %>>All upcoming</option>
         <option value="this-week" <%= filter.timeframe === "this-week" ? "selected" : "" %>>This week</option>
@@ -54,18 +60,21 @@
       </select>
     </div>
 
-    <div class="flex gap-2">
+    <div class="flex gap-2 items-center">
       <button
         type="submit"
         class="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 cursor-pointer"
       >
         Filter
       </button>
-      <% if (filter.query || filter.category || filter.timeframe !== "all") { %>
-        <a href="/events" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-semibold hover:bg-slate-200 no-underline">
-          Clear
-        </a>
-      <% } %>
+      <a
+        href="/events"
+        x-show="q || category || timeframe !== 'all'"
+        x-cloak
+        class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-semibold hover:bg-slate-200 no-underline"
+      >
+        Clear
+      </a>
     </div>
   </form>
 </section>
