@@ -19,7 +19,11 @@ function formatTime(d) {
   <% } else { %>
     <ul class="space-y-3">
       <% for (const entry of upcoming) { %>
-        <li id="rsvp-row-<%= entry.rsvpId %>" class="p-5 border border-slate-200 rounded-2xl bg-white shadow-sm flex flex-col gap-1">
+        <li
+          id="rsvp-row-<%= entry.rsvpId %>"
+          x-data="{ confirming: false }"
+          class="p-5 border border-slate-200 rounded-2xl bg-white shadow-sm flex flex-col gap-1"
+        >
           <div class="flex items-center justify-between gap-3 flex-wrap">
             <span class="text-lg font-bold text-slate-900"><%= entry.eventTitle %></span>
             <div class="flex items-center gap-2">
@@ -43,26 +47,49 @@ function formatTime(d) {
             <%= formatTime(entry.eventStartDatetime) %> &ndash; <%= formatTime(entry.eventEndDatetime) %>
           </p>
           <p class="text-sm text-slate-500"><%= entry.eventLocation %></p>
-          <div class="flex items-center gap-3 mt-2">
+
+          <div class="flex items-center gap-3 mt-2" x-show="!confirming">
             <a href="/events/<%= entry.eventId %>" class="text-blue-600 hover:text-blue-700 text-sm font-semibold no-underline">View Event →</a>
             <button
               type="button"
               class="text-red-600 hover:text-red-700 text-sm font-semibold cursor-pointer bg-transparent border-0 p-0"
-              hx-post="/events/<%= entry.eventId %>/rsvp"
-              hx-target="#rsvp-row-<%= entry.rsvpId %>"
-              hx-swap="outerHTML"
-              hx-confirm="Cancel your RSVP for this event?"
+              @click="confirming = true"
             >
               Cancel RSVP
             </button>
-            <noscript>
-              <form method="POST" action="/events/<%= entry.eventId %>/rsvp" class="inline">
-                <button type="submit" class="text-red-600 hover:text-red-700 text-sm font-semibold cursor-pointer bg-transparent border-0 p-0">
-                  Cancel RSVP
-                </button>
-              </form>
-            </noscript>
           </div>
+
+          <div
+            x-show="confirming"
+            x-cloak
+            class="mt-2 flex items-center gap-3 p-3 rounded-xl bg-red-50 border border-red-200"
+          >
+            <p class="text-sm text-red-700 font-medium flex-1">Cancel your RSVP for this event?</p>
+            <button
+              type="button"
+              class="px-3 py-1.5 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 cursor-pointer"
+              hx-post="/events/<%= entry.eventId %>/rsvp"
+              hx-target="#rsvp-row-<%= entry.rsvpId %>"
+              hx-swap="outerHTML"
+            >
+              Yes, cancel
+            </button>
+            <button
+              type="button"
+              class="px-3 py-1.5 rounded-lg bg-white text-slate-700 text-sm font-semibold border border-slate-200 hover:bg-slate-50 cursor-pointer"
+              @click="confirming = false"
+            >
+              No, keep it
+            </button>
+          </div>
+
+          <noscript>
+            <form method="POST" action="/events/<%= entry.eventId %>/rsvp" class="inline mt-2">
+              <button type="submit" class="text-red-600 hover:text-red-700 text-sm font-semibold cursor-pointer bg-transparent border-0 p-0">
+                Cancel RSVP
+              </button>
+            </form>
+          </noscript>
         </li>
       <% } %>
     </ul>
