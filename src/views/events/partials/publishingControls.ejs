@@ -43,6 +43,8 @@
 <span
   id="status-badge"
   hx-swap-oob="true"
+  x-data
+  x-init="$el.style.cssText='opacity:0;transform:scale(0.75)'; requestAnimationFrame(() => { $el.style.cssText='transition:opacity 0.3s ease,transform 0.3s ease;opacity:1;transform:scale(1)' })"
   class="inline-block text-xs font-semibold px-3 py-1.5 rounded-full border capitalize <%= statusBadgeClass %>"
 >
   <%= event.status %>
