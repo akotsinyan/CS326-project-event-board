@@ -1,3 +1,5 @@
+
+
 <section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-gradient-to-b from-white to-slate-50 shadow-lg">
   <div class="flex items-start justify-between gap-4 flex-wrap">
     <div>
@@ -5,16 +7,13 @@
       <p class="text-slate-500">Organized by <%= event.organizerName %></p>
     </div>
     <% const statusColors = { published: "bg-green-100 text-green-800 border-green-200", draft: "bg-yellow-100 text-yellow-800 border-yellow-200", cancelled: "bg-red-100 text-red-800 border-red-200", past: "bg-slate-100 text-slate-600 border-slate-200" }; %>
-    <span
-      id="status-badge"
-      x-data
-      x-init="$el.style.cssText='opacity:0;transform:scale(0.75)'; requestAnimationFrame(() => { $el.style.cssText='transition:opacity 0.3s ease,transform 0.3s ease;opacity:1;transform:scale(1)' })"
-      class="inline-block text-xs font-semibold px-3 py-1.5 rounded-full border capitalize <%= statusColors[event.status] || 'bg-slate-100 text-slate-600 border-slate-200' %>"
-    >
+    <span id="status-badge" class="inline-block text-xs font-semibold px-3 py-1.5 rounded-full border capitalize <%= statusColors[event.status] || 'bg-slate-100 text-slate-600 border-slate-200' %>">
       <%= event.status %>
     </span>
   </div>
 </section>
+
+
 
 <% if (pageError) { %>
   <%- include("../partials/error", { message: pageError }) %>
@@ -33,44 +32,60 @@
     <div class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg mb-6">
       <h2 class="text-lg font-bold text-slate-900 mb-4">Event Details</h2>
 
-      <div class="space-y-4">
-        <div>
-          <p class="text-sm font-semibold text-slate-600 mb-1">Date & Time</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Date & Time -->
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <p class="text-sm font-semibold text-slate-600 mb-2">Date & Time</p>
+      
+          <div x-data="relativeEventTime('<%= event.startDatetime.toISOString() %>')" x-init="init()" class="space-y-1">
+            <p class="text-slate-900">
+              <%= event.startDatetime.toLocaleDateString("en-US", { weekday: "long" , year: "numeric" , month: "long" ,
+                day: "numeric" }) %>
+                <br />
+                <%= event.startDatetime.toLocaleTimeString("en-US", { hour: "numeric" , minute: "2-digit" }) %>
+                  &ndash;
+                  <%= event.endDatetime.toLocaleTimeString("en-US", { hour: "numeric" , minute: "2-digit" }) %>
+            </p>
+      
+            <p class="text-sm text-slate-500">
+              <span class="font-medium text-slate-600">Quick label:</span>
+              <span x-text="relativeLabel"></span>
+            </p>
+          </div>
+        </div>
+      
+        <!-- Location -->
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <p class="text-sm font-semibold text-slate-600 mb-2">Location</p>
           <p class="text-slate-900">
-            <%= event.startDatetime.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }) %>
-            <br />
-            <%= event.startDatetime.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) %>
-            &ndash;
-            <%= event.endDatetime.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) %>
+            <%= event.location %>
           </p>
         </div>
-
-        <div>
-          <p class="text-sm font-semibold text-slate-600 mb-1">Location</p>
-          <p class="text-slate-900"><%= event.location %></p>
-        </div>
-
-        <div>
-          <p class="text-sm font-semibold text-slate-600 mb-1">Category</p>
-          <p class="inline-block text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+      
+        <!-- Category -->
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <p class="text-sm font-semibold text-slate-600 mb-2">Category</p>
+          <p
+            class="inline-block text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
             <%= event.category %>
           </p>
         </div>
-
-        <% if (event.capacity !== null) { %>
-          <div>
-            <p class="text-sm font-semibold text-slate-600 mb-1">Capacity</p>
+      
+        <!-- Capacity / Attendance -->
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <% if (event.capacity !==null) { %>
+            <p class="text-sm font-semibold text-slate-600 mb-2">Capacity</p>
             <p class="text-slate-900">
               <%= event.attendeeCount %> / <%= event.capacity %> attendees
-              <span class="text-slate-500 text-sm">(<%= event.capacity - event.attendeeCount %> spots remaining)</span>
+                  <span class="text-slate-500 text-sm">(<%= event.capacity - event.attendeeCount %> spots remaining)</span>
             </p>
-          </div>
-        <% } else { %>
-          <div>
-            <p class="text-sm font-semibold text-slate-600 mb-1">Attendance</p>
-            <p class="text-slate-900"><%= event.attendeeCount %> attendees (unlimited capacity)</p>
-          </div>
-        <% } %>
+            <% } else { %>
+              <p class="text-sm font-semibold text-slate-600 mb-2">Attendance</p>
+              <p class="text-slate-900">
+                <%= event.attendeeCount %> attendees (unlimited capacity)
+              </p>
+              <% } %>
+        </div>
       </div>
     </div>
 
@@ -111,12 +126,45 @@
         <%- include("./partials/saveButton", { eventId: event.id, state: saveState }) %>
       </div>
     <% } %>
+
+    <!-- Back Link -->
+    <div class="mt-6">
+      <div class="p-5 border border-[#881c1c]/20 rounded-2xl bg-white shadow-lg text-center">
+        <a href="/events"
+          class="text-lg font-bold text-[#881c1c] no-underline hover:underline hover:text-[#a22a2a] transition">
+          ← Back to Events
+        </a>
+      </div>
+    </div>
   </div>
 </section>
 
-<!-- Back Link -->
-<div class="mt-6">
-  <a href="/events" class="text-blue-600 hover:text-blue-700 text-sm font-semibold no-underline">
-    ← Back to Events
-  </a>
-</div>
+<script>
+  document.addEventListener("alpine:init", () => {
+    Alpine.data("relativeEventTime", (startIso) => ({
+      startIso,
+      relativeLabel: "",
+
+      init() {
+        this.relativeLabel = this.formatRelativeTime(new Date(this.startIso), new Date());
+      },
+
+      formatRelativeTime(target, now) {
+        const msPerDay = 24 * 60 * 60 * 1000;
+        const start = new Date(target);
+        const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+        const nowDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const dayDiff = Math.round((startDay - nowDay) / msPerDay);
+
+        if (dayDiff === 0) return "Today";
+        if (dayDiff === 1) return "Tomorrow";
+        if (dayDiff === -1) return "Yesterday";
+        if (dayDiff > 1 && dayDiff <= 7) return `in ${dayDiff} days`;
+        if (dayDiff < -1 && dayDiff >= -7) return `${Math.abs(dayDiff)} days ago`;
+
+        const absDiff = Math.abs(dayDiff);
+        return dayDiff > 0 ? `in ${absDiff} days` : `${absDiff} days ago`;
+      },
+    }));
+  });
+</script>
