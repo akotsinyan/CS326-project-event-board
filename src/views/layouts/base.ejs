@@ -1,46 +1,90 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Event Board</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js"></script>
-    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
-  </head>
-  <body class="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 text-slate-900 p-6">
-    <div class="max-w-5xl mx-auto">
-      <nav class="flex items-center justify-between gap-3 mb-6 flex-wrap">
-        <a
-          href="<%= session?.authenticatedUser ? '/home' : '/login' %>"
-          class="inline-flex items-center gap-2.5 px-4 py-3 rounded-xl bg-white border border-slate-200 shadow-lg font-bold text-slate-900 no-underline"
-        >
-          <span class="w-2.5 h-2.5 rounded-full bg-gradient-to-b from-blue-400 to-blue-600"></span>
-          Event Board
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Event Board</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js"></script>
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+</head>
+
+<body class="min-h-screen bg-[linear-gradient(180deg,#f8f5f5_0%,#f3ecec_45%,#ede6e6_100%)] text-[#1f1b1b]">
+  <header
+    class="sticky top-0 z-50 border-b border-[#881c1c]/15 bg-white/85 backdrop-blur-xl shadow-[0_8px_30px_rgba(17,17,17,0.08)]">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <nav class="flex items-center justify-between gap-4 py-4 flex-wrap">
+        <a href="<%= session?.authenticatedUser ? '/home' : '/login' %>"
+          class="inline-flex items-center gap-3 rounded-2xl border border-[#881c1c]/15 bg-[#881c1c] px-4 py-3 text-white no-underline shadow-lg shadow-[#881c1c]/15 transition hover:-translate-y-0.5 hover:shadow-xl">
+          <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/20">
+            <span class="h-2.5 w-2.5 rounded-full bg-white"></span>
+          </span>
+          <span class="flex flex-col leading-tight">
+            <span class="text-sm font-semibold uppercase tracking-[0.18em] text-white/75">Campus</span>
+            <span class="text-lg font-bold">Event Board</span>
+          </span>
         </a>
-        <div class="flex items-center gap-3 flex-wrap">
+
+        <div class="flex items-center gap-3 flex-wrap justify-end">
           <% if (session?.authenticatedUser) { %>
-            <% if (session.authenticatedUser.role === "admin") { %>
-              <a href="/admin/users" class="text-blue-700 font-semibold no-underline hover:underline">Manage Users</a>
-            <% } %>
-            <span class="text-slate-500">
-              Signed in as <strong class="text-slate-700"><%= session.authenticatedUser.displayName %></strong>
-              (<%= session.authenticatedUser.role %>)
-            </span>
-            <form method="post" action="/logout" class="m-0">
-              <button
-                type="submit"
-                class="px-3.5 py-2 rounded-lg bg-white text-blue-700 border border-slate-200 cursor-pointer hover:bg-blue-50 text-sm font-medium"
-              >
-                Log out
-              </button>
-            </form>
-          <% } else { %>
-            <a href="/login" class="text-blue-700 font-semibold no-underline hover:underline">Log in</a>
-          <% } %>
+            <a href="/events"
+              class="rounded-full px-4 py-2 text-sm font-semibold text-[#2c2424] no-underline transition hover:bg-[#881c1c]/8 hover:text-[#881c1c]">
+              Events
+            </a>
+
+            <a href="/saved"
+              class="rounded-full px-4 py-2 text-sm font-semibold text-[#2c2424] no-underline transition hover:bg-[#881c1c]/8 hover:text-[#881c1c]">
+              Saved
+            </a>
+
+            <% if (session.authenticatedUser.role==="admin" ) { %>
+              <a href="/admin/users"
+                class="rounded-full px-4 py-2 text-sm font-semibold text-[#2c2424] no-underline transition hover:bg-[#881c1c]/8 hover:text-[#881c1c]">
+                Manage Users
+              </a>
+              <% } %>
+
+                <div class="hidden sm:flex items-center gap-3 rounded-full border border-black/10 bg-black/5 px-4 py-2">
+                  <div class="flex h-9 w-9 items-center justify-center rounded-full bg-[#881c1c] text-white font-bold">
+                    <%= (session.authenticatedUser.displayName || "?" ).charAt(0).toUpperCase() %>
+                  </div>
+                  <div class="leading-tight">
+                    <div class="text-sm font-semibold text-[#1f1b1b]">
+                      <%= session.authenticatedUser.displayName %>
+                    </div>
+                    <div class="text-xs text-black/55 capitalize">
+                      <%= session.authenticatedUser.role %>
+                    </div>
+                  </div>
+                </div>
+
+                <form method="post" action="/logout" class="m-0">
+                  <button type="submit"
+                    class="rounded-full border border-[#881c1c]/20 bg-white px-4 py-2 text-sm font-semibold text-[#881c1c] cursor-pointer shadow-sm transition hover:bg-[#881c1c] hover:text-white hover:shadow-md">
+                    Log out
+                  </button>
+                </form>
+                <% } else { %>
+                  <a href="/login"
+                    class="rounded-full border border-[#881c1c]/20 bg-[#881c1c] px-4 py-2 text-sm font-semibold text-white no-underline shadow-sm transition hover:shadow-md hover:-translate-y-0.5">
+                    Log in
+                  </a>
+                  <% } %>
         </div>
       </nav>
-      <main class="max-w-5xl mx-auto"><%- body %></main>
     </div>
-  </body>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div
+      class="rounded-[2rem] border border-black/8 bg-white/80 shadow-[0_18px_60px_rgba(17,17,17,0.08)] backdrop-blur-sm overflow-hidden">
+      <div class="h-1.5 bg-[linear-gradient(90deg,#881c1c_0%,#b13d3d_50%,#2a2323_100%)]"></div>
+      <div class="p-5 sm:p-7 lg:p-8">
+        <%- body %>
+      </div>
+    </div>
+  </main>
+</body>
+
 </html>
