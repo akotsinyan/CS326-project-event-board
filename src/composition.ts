@@ -42,11 +42,10 @@ import { CreateInMemorySaveForLaterRepository } from "./features/SaveForLater/Sa
 import { CreateSaveForLaterService } from "./features/SaveForLater/SaveForLaterService";
 import { CreateSaveForLaterController } from "./features/SaveForLater/SaveForLaterController";
 
-import { PrismaClient } from "@prisma/client";
 import { CreatePrismaEventEditingRepository } from "./features/EventEditing/EventEditingPrismaRepo";
 import { CreateInMemoryEventEditingRepository } from "./features/EventEditing/EventEditingRepository";
 import { CreatePrismaSaveForLaterRepository } from "./features/SaveForLater/SaveForLaterPrismaRepo";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { getPrismaClient } from "./lib/prisma";
 
 export function createComposedApp(
   mode: "memory" | "prisma" = "memory",
@@ -66,11 +65,7 @@ export function createComposedApp(
   );
 
   // ── Shared Prisma client ──────────────────────────────────────────────────
-  const prisma = new PrismaClient({
-    adapter: new PrismaBetterSqlite3({
-      url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
-    }),
-  });
+  const prisma = getPrismaClient();
 
   // ── Shared event store (single source of truth for all event features) ────
   const sharedEventRepo =
